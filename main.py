@@ -65,20 +65,20 @@ def get_demo_data() -> dict:
             {"id": "kp5", "name": "Tripadvisor Comeback", "kunde": "k5", "plattform": "Tripadvisor", "status": "abgeschlossen", "ziel": 50, "erreicht": 50, "methode": "QR-Code", "start": "2024-06-01"},
         ],
         "tasks": [
-            {"id": "t1", "title": "Demo vorbereiten: Dr. Braun", "prio": "hoch", "due": "2025-01-10", "type": "Bericht", "kunde": "", "done": False, "user": "Alex"},
-            {"id": "t2", "title": "Follow-up: Bäckerei Hoffmann", "prio": "mittel", "due": "2025-01-08", "type": "E-Mail", "kunde": "", "done": False, "user": "Bianca"},
-            {"id": "t3", "title": "Monatsbericht: Trattoria", "prio": "hoch", "due": "2025-01-01", "type": "Bericht", "kunde": "k1", "done": False, "user": "Chris"},
-            {"id": "t4", "title": "Trial verlängern: Dr. Schmidt", "prio": "hoch", "due": "2025-01-05", "type": "Anruf", "kunde": "k3", "done": False, "user": "Alex"},
-            {"id": "t5", "title": "Onboarding Hotel Seehof", "prio": "niedrig", "due": "2025-01-20", "type": "Meeting", "kunde": "k5", "done": True, "user": "Dana"},
-            {"id": "t6", "title": "Kampagnenbericht Q3", "prio": "mittel", "due": "2024-11-30", "type": "Bericht", "kunde": "", "done": True, "user": "Bianca"},
+            {"id": "t1", "title": "Demo vorbereiten: Dr. Braun", "prio": "hoch", "due": "2025-01-10", "type": "Bericht", "kunde": "", "done": False, "user": "Tyrone"},
+            {"id": "t2", "title": "Follow-up: Bäckerei Hoffmann", "prio": "mittel", "due": "2025-01-08", "type": "E-Mail", "kunde": "", "done": False, "user": "Kevin"},
+            {"id": "t3", "title": "Monatsbericht: Trattoria", "prio": "hoch", "due": "2025-01-01", "type": "Bericht", "kunde": "k1", "done": False, "user": "Marc"},
+            {"id": "t4", "title": "Trial verlängern: Dr. Schmidt", "prio": "hoch", "due": "2025-01-05", "type": "Anruf", "kunde": "k3", "done": False, "user": "Tyrone"},
+            {"id": "t5", "title": "Onboarding Hotel Seehof", "prio": "niedrig", "due": "2025-01-20", "type": "Meeting", "kunde": "k5", "done": True, "user": "Kevin"},
+            {"id": "t6", "title": "Kampagnenbericht Q3", "prio": "mittel", "due": "2024-11-30", "type": "Bericht", "kunde": "", "done": True, "user": "Marc"},
         ],
         "calls": [],
         "activities": [
-            {"ic": "🎯", "text": "<b>Steuerbüro Fischer</b> als Deal gewonnen!", "time": "vor 2 Std.", "user": "Emir", "bg": "rgba(45,122,79,.15)"},
-            {"ic": "⭐", "text": "Kampagne <b>Google Boost Q4</b>: 38 neue Bewertungen", "time": "vor 4 Std.", "user": "Alex", "bg": "rgba(192,138,48,.12)"},
-            {"ic": "🏢", "text": "<b>Dr. med. Schmidt</b> als Trial-Kunde hinzugefügt", "time": "gestern", "user": "Bianca", "bg": "rgba(192,57,43,.13)"},
-            {"ic": "✓", "text": "Aufgabe <b>Onboarding Hotel Seehof</b> erledigt", "time": "gestern", "user": "Dana", "bg": "rgba(45,122,79,.12)"},
-            {"ic": "📄", "text": "Angebot an <b>Reifenservice Kern</b> gesendet", "time": "vor 2 Tagen", "user": "Chris", "bg": "rgba(30,28,22,1)"},
+            {"ic": "🎯", "text": "<b>Steuerbüro Fischer</b> als Deal gewonnen!", "time": "vor 2 Std.", "user": "Tyrone", "bg": "rgba(45,122,79,.15)"},
+            {"ic": "⭐", "text": "Kampagne <b>Google Boost Q4</b>: 38 neue Bewertungen", "time": "vor 4 Std.", "user": "Kevin", "bg": "rgba(192,138,48,.12)"},
+            {"ic": "🏢", "text": "<b>Dr. med. Schmidt</b> als Trial-Kunde hinzugefügt", "time": "gestern", "user": "Marc", "bg": "rgba(192,57,43,.13)"},
+            {"ic": "✓", "text": "Aufgabe <b>Onboarding Hotel Seehof</b> erledigt", "time": "gestern", "user": "Kevin", "bg": "rgba(45,122,79,.12)"},
+            {"ic": "📄", "text": "Angebot an <b>Reifenservice Kern</b> gesendet", "time": "vor 2 Tagen", "user": "Tyrone", "bg": "rgba(30,28,22,1)"},
         ]
     }
 

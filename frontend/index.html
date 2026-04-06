@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ReviewCRM — Echtzeit</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 :root{
   --bg:#0f0e0c;--s1:#161412;--s2:#1e1b18;--s3:#272420;--s4:#302c28;
@@ -246,7 +247,6 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <span class="user-label">Nutzer:</span>
   <select class="user-sel" id="userSel" onchange="switchUser(this.value)">
     <option value="">Wählen...</option>
-    <option>Alex</option><option>Bianca</option><option>Chris</option><option>Dana</option><option>Emir</option>
     <option>Tyrone</option><option>Kevin</option><option>Marc</option>
   </select>
   <div class="ws-pill disc" id="wsPill"><span class="ws-dot"></span><span id="wsLbl">Verbinde...</span></div>
@@ -271,6 +271,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <button class="ntab" onclick="gv('tasks',this)">Aufgaben <span class="nc" id="nc-t">0</span></button>
   <button class="ntab" onclick="gv('berichte',this)">Berichte</button>
   <button class="ntab" onclick="gv('anrufe',this)">📞 Anrufe</button>
+  <button class="ntab" onclick="gv('kalender',this)">📅 Kalender</button>
 </div>
 
 <!-- MAIN -->
@@ -357,6 +358,48 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
     </div>
   </div>
 
+  <!-- KALENDER -->
+  <div class="view" id="v-kalender">
+    <div class="ph">
+      <div><div class="ph-t">Google Kalender</div><div class="ph-s">Termine & Events direkt im CRM</div></div>
+      <div class="ph-a">
+        <button class="btn btn-g btn-sm" id="gcal-sync-btn" onclick="loadGCalEvents()" style="display:none">↻ Aktualisieren</button>
+        <button class="btn btn-r btn-sm" id="gcal-connect-btn" onclick="connectGCal()">Google Kalender verbinden</button>
+      </div>
+    </div>
+    <div id="gcal-setup" class="card" style="padding:28px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px;opacity:.3">📅</div>
+      <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Google Kalender verbinden</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:18px;line-height:1.7">Klicke auf "Google Kalender verbinden" oben rechts.<br>Deine Termine werden dann direkt hier angezeigt.</div>
+      <div style="background:var(--s3);border-radius:var(--r);padding:12px 16px;display:inline-block;text-align:left">
+        <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Setup (einmalig)</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.8">
+          1. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--red2)">console.cloud.google.com</a> → Neues Projekt<br>
+          2. APIs & Dienste → Google Calendar API aktivieren<br>
+          3. OAuth 2.0 Client ID erstellen (Web-App)<br>
+          4. Authorized Origins: deine Render-URL eintragen<br>
+          5. Client ID unten eintragen & speichern
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;justify-content:center;max-width:480px;margin-left:auto;margin-right:auto">
+        <input id="gcal-client-input" placeholder="Google Client ID einfügen (xxxx.apps.googleusercontent.com)" style="flex:1;font-size:11px">
+        <button class="btn btn-r btn-sm" onclick="saveGCalClientId()">Speichern</button>
+      </div>
+    </div>
+    <div id="gcal-events" style="display:none">
+      <div class="g2b">
+        <div class="card">
+          <div class="ch"><span class="ct">Nächste Termine</span><span id="gcal-count" style="font-family:var(--fm);font-size:9px;color:var(--t3)"></span></div>
+          <div class="cb" id="gcal-list"></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">Heute</span></div>
+          <div class="cb" id="gcal-today"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ANRUFE -->
   <div class="view" id="v-anrufe">
     <div class="ph">
@@ -409,7 +452,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[]};
 let curUser='', ws=null, wsRetries=0;
 let kFilter='all', kpFilter='all';
-const UC={Alex:'#c0392b',Bianca:'#2d7a8a',Chris:'#7a4a8a',Dana:'#256b42',Emir:'#8a7a2d',Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
+const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
 let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
 const WS_URL=`ws://${location.host}/ws/`;
 
@@ -514,6 +557,7 @@ function renderView(id){
   else if(id==='tasks')rTasks();
   else if(id==='berichte')rBerichte();
   else if(id==='anrufe')rAnrufe();
+  else if(id==='kalender')rKalender();
 }
 
 function updateCounts(){
@@ -759,6 +803,7 @@ function rTasks(){
       <div class="tm"><span>${t.type}</span>${t.due?`<span>📅 ${t.due}</span>`:''}${t.user?`<span style="color:${UC[t.user]||'var(--t3)'}">${t.user}</span>`:''}</div></div>
     <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
     <div style="display:flex;gap:4px;margin-left:5px">
+      <button class="btn btn-g btn-sm" onclick="gcalAddEvent('${t.title}','${t.due||today()}','${t.type}')" title="In Google Kalender">📅</button>
       <button class="btn btn-g btn-sm" onclick="openT('${t.id}')">✏</button>
       <button class="btn btn-g btn-sm" onclick="delT('${t.id}')">✕</button>
     </div></div>`;
@@ -780,7 +825,7 @@ function toggleTask(id){
 function openT(id){
   const t=id?D.tasks.find(x=>x.id===id):{};
   const kundeOpts='<option value="">— Kein Bezug —</option>'+D.kunden.map(k=>`<option value="${k.id}"${t.kunde===k.id?' selected':''}>${k.name}</option>`).join('');
-  const userOpts='<option value="">— Niemand —</option>'+['Alex','Bianca','Chris','Dana','Emir','Tyrone','Kevin','Marc'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
+  const userOpts='<option value="">— Niemand —</option>'+['Tyrone','Kevin','Marc'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
   document.getElementById('modal-t-inner').innerHTML=`
     <div class="mhd"><div class="mt">${id?'Aufgabe bearbeiten':'Neue Aufgabe'}</div><button class="mcl" onclick="cm('modal-t')">✕</button></div>
     <div class="mbd">
@@ -822,6 +867,109 @@ function rBerichte(){
   const phases=['lead','kontakt','demo','angebot','gewonnen'];const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot',gewonnen:'Gewonnen'};
   const pc=phases.map(p=>D.deals.filter(d=>d.phase===p).length);const mc=Math.max(...pc,1);
   document.getElementById('fc').innerHTML=phases.map((p,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:5px 0"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);width:60px">${pL[p]}</div><div style="flex:1;height:18px;background:var(--s3);border-radius:3px;overflow:hidden"><div style="height:100%;background:${['#5a5258','#4a7a9b','#7a4a8a','#8a7a2a','#256b42'][i]};width:${Math.round(pc[i]/mc*100)}%;border-radius:3px;transition:width .5s"></div></div><div style="font-family:var(--fm);font-size:10px;color:var(--t2);width:18px;text-align:right">${pc[i]}</div></div>`).join('');
+}
+
+// ── GOOGLE KALENDER ───────────────────────────────────────────────────────
+let GCAL_CLIENT_ID = localStorage.getItem('gcal_client_id') || '';
+let gcalToken = null;
+
+function saveGCalClientId(){
+  const v = document.getElementById('gcal-client-input').value.trim();
+  if(!v){toast('Client ID erforderlich','!');return;}
+  GCAL_CLIENT_ID = v;
+  localStorage.setItem('gcal_client_id', v);
+  toast('Client ID gespeichert ✓');
+}
+
+function rKalender(){
+  if(GCAL_CLIENT_ID){
+    document.getElementById('gcal-client-input').value = GCAL_CLIENT_ID;
+  }
+  if(gcalToken){
+    document.getElementById('gcal-setup').style.display='none';
+    document.getElementById('gcal-events').style.display='block';
+    document.getElementById('gcal-connect-btn').style.display='none';
+    document.getElementById('gcal-sync-btn').style.display='inline-flex';
+    loadGCalEvents();
+  }
+}
+
+function connectGCal(){
+  if(!GCAL_CLIENT_ID){
+    const v = document.getElementById('gcal-client-input')?.value?.trim();
+    if(v){GCAL_CLIENT_ID=v;localStorage.setItem('gcal_client_id',v);}
+    else{toast('Bitte zuerst Google Client ID eintragen','⚠️');document.getElementById('gcal-client-input')?.focus();return;}
+  }
+  try{
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GCAL_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/calendar.readonly',
+      callback: (resp) => {
+        if(resp.error){toast('Google Auth Fehler: '+resp.error,'⚠️');return;}
+        gcalToken = resp.access_token;
+        document.getElementById('gcal-setup').style.display='none';
+        document.getElementById('gcal-events').style.display='block';
+        document.getElementById('gcal-connect-btn').style.display='none';
+        document.getElementById('gcal-sync-btn').style.display='inline-flex';
+        loadGCalEvents();
+        toast('Google Kalender verbunden ✓','📅');
+      }
+    });
+    client.requestAccessToken();
+  }catch(e){
+    toast('Google API nicht geladen. Seite neu laden.','⚠️');
+  }
+}
+
+async function loadGCalEvents(){
+  if(!gcalToken)return;
+  const now=new Date().toISOString();
+  try{
+    const res=await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?orderBy=startTime&singleEvents=true&timeMin=${encodeURIComponent(now)}&maxResults=20`,
+      {headers:{Authorization:`Bearer ${gcalToken}`}}
+    );
+    if(res.status===401){gcalToken=null;toast('Session abgelaufen, bitte neu verbinden','⚠️');return;}
+    const data=await res.json();
+    renderGCalEvents(data.items||[]);
+  }catch(e){toast('Kalender Fehler','⚠️');}
+}
+
+function renderGCalEvents(events){
+  document.getElementById('gcal-count').textContent=events.length+' Termine';
+  const todayStr=today();
+  const todayEvts=events.filter(e=>{
+    const d=(e.start?.dateTime||e.start?.date||'').slice(0,10);
+    return d===todayStr;
+  });
+  const upcoming=events.slice(0,10);
+
+  const fmtEvt=e=>{
+    const start=e.start?.dateTime||e.start?.date||'';
+    const dt=start?new Date(start):null;
+    const dateStr=dt?dt.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'}):'—';
+    const timeStr=e.start?.dateTime?dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'Ganztag';
+    const gcalUrl=`https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(e.summary||'')}&dates=${(e.start?.dateTime||e.start?.date||'').replace(/[-:]/g,'').replace('.000Z','Z')}/${(e.end?.dateTime||e.end?.date||'').replace(/[-:]/g,'').replace('.000Z','Z')}`;
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--b1)">
+      <div style="background:var(--rd);border-radius:var(--r);padding:5px 8px;text-align:center;min-width:44px;flex-shrink:0">
+        <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase">${dateStr.split(' ')[0]}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red2)">${dateStr.split(' ')[1]||''}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.summary||'(kein Titel)'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${timeStr}${e.location?` · ${e.location}`:''}</div>
+      </div>
+      <a href="${gcalUrl}" target="_blank" style="font-size:10px;color:var(--red2);text-decoration:none;flex-shrink:0;padding:3px 7px;border:1px solid var(--rb);border-radius:4px">↗</a>
+    </div>`;
+  };
+
+  document.getElementById('gcal-list').innerHTML=upcoming.length?upcoming.map(fmtEvt).join(''):'<div class="empty"><div class="et">Keine bevorstehenden Termine</div></div>';
+  document.getElementById('gcal-today').innerHTML=todayEvts.length?todayEvts.map(fmtEvt).join(''):'<div style="font-size:11px;color:var(--t3);padding:14px;text-align:center">Heute keine Termine</div>';
+}
+
+function gcalAddEvent(title, date, notes=''){
+  const url=`https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(title)}&dates=${date.replace(/-/g,'')}/${date.replace(/-/g,'')}&details=${encodeURIComponent(notes)}`;
+  window.open(url,'_blank');
 }
 
 // ── ANRUFE ────────────────────────────────────────────────────────────────
