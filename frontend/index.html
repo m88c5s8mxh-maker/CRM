@@ -6,6 +6,7 @@
 <title>ReviewCRM — Echtzeit</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer onload="setTimeout(autoConnectGCal,500)"></script>
+<script src="https://sdk.twilio.com/js/voice/releases/2.9.0/twilio.js"></script>
 <style>
 :root{
   --bg:#0f0e0c;--s1:#161412;--s2:#1e1b18;--s3:#272420;--s4:#302c28;
@@ -447,9 +448,13 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 <!-- ACTIVE CALL BAR -->
 <div class="call-bar" id="callBar">
   <div class="call-rec"></div>
-  <span id="callKundeName" style="font-size:12px;font-weight:600;color:var(--t1)">—</span>
+  <div>
+    <div id="callKundeName" style="font-size:12px;font-weight:600;color:var(--t1)">—</div>
+    <div id="callStatus" style="font-family:var(--fm);font-size:9px;color:var(--t3)">Verbinde...</div>
+  </div>
   <span id="callTimer" style="font-family:var(--fm);font-size:14px;font-weight:700;color:#4caf82">00:00</span>
-  <button onclick="stopCall()" style="background:var(--red);border:none;border-radius:var(--r);padding:5px 14px;color:#fff;font-size:11px;font-weight:700;font-family:var(--ff);cursor:pointer">■ Beenden</button>
+  <button id="muteBtn" onclick="toggleMute()" style="background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:5px 11px;color:var(--t2);font-size:11px;font-family:var(--ff);cursor:pointer">🎙 Ton</button>
+  <button onclick="stopCall()" style="background:var(--red);border:none;border-radius:var(--r);padding:5px 14px;color:#fff;font-size:11px;font-weight:700;font-family:var(--ff);cursor:pointer">📵 Auflegen</button>
 </div>
 
 <div class="toasts" id="toasts"></div>
@@ -1043,6 +1048,102 @@ function gcalAddEvent(title, date, notes=''){
   window.open(url,'_blank');
 }
 
+// ── TWILIO VOICE ─────────────────────────────────────────────────────────
+let twilioDevice = null;
+let twilioCall = null;
+let twilioReady = false;
+let twilioConfigured = false;
+let callMuted = false;
+
+async function checkTwilio(){
+  try{
+    const r = await fetch('/api/twilio-status');
+    const d = await r.json();
+    twilioConfigured = d.configured;
+  }catch(e){ twilioConfigured = false; }
+}
+
+async function initTwilio(){
+  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return false; }
+  try{
+    const r = await fetch(`/api/twilio-token?user=${encodeURIComponent(curUser)}`);
+    if(!r.ok){ toast('Twilio nicht konfiguriert','⚠️'); return false; }
+    const {token} = await r.json();
+    twilioDevice = new Twilio.Device(token, {codecPreferences:['opus','pcmu']});
+    twilioDevice.on('ready', ()=>{ twilioReady=true; });
+    twilioDevice.on('error', e=>toast('Fehler: '+e.message,'⚠️'));
+    twilioDevice.on('disconnect', ()=>{ onCallEnded(); });
+    await twilioDevice.register();
+    twilioReady = true;
+    return true;
+  }catch(e){ toast('Twilio SDK Fehler','⚠️'); return false; }
+}
+
+function setCallStatus(txt){ const el=document.getElementById('callStatus'); if(el) el.textContent=txt; }
+
+async function makeCall(phoneNumber, kundeId){
+  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return; }
+  if(!twilioDevice || !twilioReady){
+    toast('Verbinde mit Telefonie...','📞');
+    const ok = await initTwilio();
+    if(!ok) return;
+  }
+  const k = kundeId ? D.kunden.find(x=>x.id===kundeId) : null;
+  callState.kundeId = kundeId||'';
+  callState.kundeName = k?.name || phoneNumber;
+  callState.startTime = null;
+  callState.active = true;
+  callState.notizen = '';
+
+  document.getElementById('callKundeName').textContent = callState.kundeName + (phoneNumber?' · '+phoneNumber:'');
+  setCallStatus('Verbinde...');
+  document.getElementById('callTimer').textContent = '00:00';
+  document.getElementById('callBar').classList.add('on');
+
+  try{
+    twilioCall = await twilioDevice.connect({ params:{ To: phoneNumber } });
+    twilioCall.on('accept', ()=>{
+      callState.startTime = Date.now();
+      setCallStatus('Verbunden');
+      clearInterval(callState.timerInterval);
+      callState.timerInterval = setInterval(()=>{
+        const s=Math.floor((Date.now()-callState.startTime)/1000);
+        document.getElementById('callTimer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+      }, 1000);
+    });
+    twilioCall.on('disconnect', ()=>{ onCallEnded(); });
+    twilioCall.on('error', e=>{ toast('Anruf-Fehler: '+e.message,'⚠️'); onCallEnded(); });
+  }catch(e){ toast('Anruf fehlgeschlagen: '+e.message,'⚠️'); onCallEnded(); }
+}
+
+function toggleMute(){
+  if(!twilioCall) return;
+  callMuted = !callMuted;
+  twilioCall.mute(callMuted);
+  const btn = document.getElementById('muteBtn');
+  if(btn){ btn.textContent = callMuted ? '🔇 Stumm' : '🎙 Ton'; btn.style.color = callMuted ? 'var(--red2)' : 'var(--t2)'; }
+}
+
+function onCallEnded(){
+  clearInterval(callState.timerInterval);
+  const duration = callState.startTime ? Math.floor((Date.now()-callState.startTime)/1000) : 0;
+  callState.active = false;
+  twilioCall = null;
+  document.getElementById('callBar').classList.remove('on');
+  callMuted = false;
+
+  if(!D.calls) D.calls=[];
+  const call={id:'c'+Date.now(),kunde:callState.kundeId,kundeName:callState.kundeName,user:curUser,datum:today(),dauer:duration,notizen:callState.notizen||''};
+  D.calls.unshift(call);
+  const mm=Math.floor(duration/60),ss=String(duration%60).padStart(2,'0');
+  const act={ic:'📞',text:`Anruf mit <b>${callState.kundeName}</b> (${mm}:${ss})`,time:'gerade eben',user:curUser,bg:'rgba(74,122,155,.15)'};
+  D.activities.unshift(act);
+  pushUpdate('calls',act);
+  if(curView==='anrufe') rAnrufe();
+  rDash();
+  toast('Anruf beendet · '+mm+':'+ss,'📞');
+}
+
 // ── ANRUFE ────────────────────────────────────────────────────────────────
 function rAnrufe(){
   if(!D.calls)D.calls=[];
@@ -1063,74 +1164,34 @@ function openCall(){
   document.getElementById('modal-call-inner').innerHTML=`
     <div class="mhd"><div class="mt">Anruf starten</div><button class="mcl" onclick="cm('modal-call')">✕</button></div>
     <div class="mbd">
-      <div class="fg"><div class="fl">Kunde</div><select id="call-ku">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Kunde</div><select id="call-ku" onchange="fillPhone(this.value)">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Telefonnummer *</div><input id="call-tel" placeholder="+49 89 123456" style="font-size:13px;font-weight:600"></div>
       <div class="fg"><div class="fl">Notizen (optional)</div><textarea id="call-no" placeholder="Gesprächsthema..."></textarea></div>
-      <div style="background:var(--s3);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--t3);line-height:1.6">
-        🎙 Das Mikrofon wird für die Aufnahme genutzt.<br>Die Aufnahme wird nach dem Beenden automatisch heruntergeladen.
-      </div>
     </div>
-    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Starten & Aufnehmen</button></div>`;
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Anrufen</button></div>`;
   om('modal-call');
+}
+
+function fillPhone(kundeId){
+  const k=D.kunden.find(x=>x.id===kundeId);
+  if(k?.tel) document.getElementById('call-tel').value=k.tel;
 }
 
 async function startCall(){
   if(!curUser){toast('Bitte zuerst Nutzer wählen','⚠️');return;}
   const kundeId=document.getElementById('call-ku').value;
+  const tel=document.getElementById('call-tel').value.trim();
   const notizen=document.getElementById('call-no').value.trim();
-  const kd=kundeId?D.kunden.find(k=>k.id===kundeId):null;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    callState.stream=stream;
-    callState.audioChunks=[];
-    callState.kundeId=kundeId;
-    callState.kundeName=kd?.name||'Kein Kunde';
-    callState.notizen=notizen;
-    callState.startTime=Date.now();
-    callState.active=true;
-    const mr=new MediaRecorder(stream);
-    callState.mediaRecorder=mr;
-    mr.ondataavailable=e=>{if(e.data.size>0)callState.audioChunks.push(e.data);};
-    mr.start(1000);
-    cm('modal-call');
-    document.getElementById('callKundeName').textContent=callState.kundeName;
-    document.getElementById('callTimer').textContent='00:00';
-    document.getElementById('callBar').classList.add('on');
-    callState.timerInterval=setInterval(()=>{
-      const s=Math.floor((Date.now()-callState.startTime)/1000);
-      const m=Math.floor(s/60),sec=s%60;
-      document.getElementById('callTimer').textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
-    },1000);
-    toast('Aufnahme läuft 🔴');
-  }catch(e){
-    toast('Mikrofon-Zugriff verweigert ⚠️');
-  }
+  if(!tel){toast('Telefonnummer erforderlich','!');return;}
+  callState.notizen=notizen;
+  cm('modal-call');
+  await makeCall(tel, kundeId);
 }
 
 function stopCall(){
-  if(!callState.active)return;
+  if(twilioCall){ twilioCall.disconnect(); return; }
+  // fallback: if no twilio call active just hide bar
   clearInterval(callState.timerInterval);
-  const duration=Math.floor((Date.now()-callState.startTime)/1000);
-  callState.mediaRecorder.onstop=()=>{
-    const blob=new Blob(callState.audioChunks,{type:'audio/webm'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download=`anruf_${callState.kundeName.replace(/\s+/g,'_')}_${today()}.webm`;
-    a.click();
-    URL.revokeObjectURL(url);
-    if(!D.calls)D.calls=[];
-    const call={id:'c'+Date.now(),kunde:callState.kundeId,kundeName:callState.kundeName,user:curUser,datum:today(),dauer:duration,notizen:callState.notizen||''};
-    D.calls.unshift(call);
-    const mm=Math.floor(duration/60),ss=String(duration%60).padStart(2,'0');
-    const act={ic:'📞',text:`Anruf mit <b>${callState.kundeName}</b> (${mm}:${ss})`,time:'gerade eben',user:curUser,bg:'rgba(74,122,155,.15)'};
-    D.activities.unshift(act);
-    pushUpdate('calls',act);
-    if(curView==='anrufe')rAnrufe();
-    rDash();
-    toast('Anruf gespeichert & heruntergeladen ✓');
-  };
-  callState.mediaRecorder.stop();
-  callState.stream.getTracks().forEach(t=>t.stop());
   callState.active=false;
   document.getElementById('callBar').classList.remove('on');
 }
@@ -1148,11 +1209,11 @@ function openCallWith(kundeId){
   document.getElementById('modal-call-inner').innerHTML=`
     <div class="mhd"><div class="mt">Anruf starten</div><button class="mcl" onclick="cm('modal-call')">✕</button></div>
     <div class="mbd">
-      <div class="fg"><div class="fl">Kunde</div><select id="call-ku">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Kunde</div><select id="call-ku" onchange="fillPhone(this.value)">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Telefonnummer *</div><input id="call-tel" value="${k?.tel||''}" placeholder="+49 89 123456" style="font-size:13px;font-weight:600"></div>
       <div class="fg"><div class="fl">Notizen (optional)</div><textarea id="call-no" placeholder="Gesprächsthema..."></textarea></div>
-      <div style="background:var(--s3);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--t3);line-height:1.6">🎙 Das Mikrofon wird für die Aufnahme genutzt.<br>Die Aufnahme wird nach dem Beenden automatisch heruntergeladen.</div>
     </div>
-    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Starten & Aufnehmen</button></div>`;
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Anrufen</button></div>`;
   om('modal-call');
 }
 
@@ -1249,6 +1310,7 @@ function today(){return new Date().toISOString().slice(0,10);}
 setPill(false);
 document.getElementById('wsLbl').textContent='Nutzer wählen';
 loadLocal();
+checkTwilio();
 window.addEventListener('beforeunload', e=>{
   if(curUser&&(!ws||ws.readyState!==1)){
     e.preventDefault();

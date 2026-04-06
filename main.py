@@ -7,16 +7,28 @@ Start: uvicorn main:app --reload --port 8000
 
 import json
 import asyncio
+import os
 from pathlib import Path
-from typing import Dict, Set
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from typing import Dict, Set, Optional, List, Any
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any
 import uuid
 import time
+
+# ── TWILIO ────────────────────────────────────────────────────────────────
+TWILIO_ACCOUNT_SID   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_API_KEY_SID   = os.environ.get("TWILIO_API_KEY_SID", "")
+TWILIO_API_KEY_SECRET= os.environ.get("TWILIO_API_KEY_SECRET", "")
+TWILIO_TWIML_APP_SID = os.environ.get("TWILIO_TWIML_APP_SID", "")
+TWILIO_PHONE_NUMBER  = os.environ.get("TWILIO_PHONE_NUMBER", "")
+
+TWILIO_CONFIGURED = all([
+    TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID,
+    TWILIO_API_KEY_SECRET, TWILIO_TWIML_APP_SID
+])
 
 app = FastAPI(title="ReviewCRM", version="1.0.0")
 
@@ -211,6 +223,49 @@ def reset_data():
     save_data(DB)
     return {"ok": True}
 
+
+# ── TWILIO ENDPOINTS ─────────────────────────────────────────────────────
+@app.get("/api/twilio-token")
+def twilio_token(user: str = "user"):
+    if not TWILIO_CONFIGURED:
+        raise HTTPException(status_code=503, detail="Twilio nicht konfiguriert")
+    from twilio.jwt.access_token import AccessToken
+    from twilio.jwt.access_token.grants import VoiceGrant
+    token = AccessToken(
+        TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID, TWILIO_API_KEY_SECRET,
+        identity=user
+    )
+    grant = VoiceGrant(
+        outgoing_application_sid=TWILIO_TWIML_APP_SID,
+        incoming_allow=True
+    )
+    token.add_grant(grant)
+    return {"token": token.to_jwt(), "configured": True}
+
+@app.get("/api/twilio-status")
+def twilio_status():
+    return {"configured": TWILIO_CONFIGURED}
+
+@app.post("/api/twiml")
+async def twiml_handler(request: Request):
+    form = await request.form()
+    to = form.get("To", "")
+    from twilio.twiml.voice_response import VoiceResponse, Dial
+    response = VoiceResponse()
+    if to:
+        dial = Dial(
+            caller_id=TWILIO_PHONE_NUMBER,
+            record="record-from-answer-dual",
+            recording_status_callback="/api/recording-done"
+        )
+        dial.number(to)
+        response.append(dial)
+    return Response(content=str(response), media_type="application/xml")
+
+@app.post("/api/recording-done")
+async def recording_done(request: Request):
+    # Twilio sends recording URL here — could save to DB
+    return Response(status_code=204)
 
 # ── FRONTEND ──────────────────────────────────────────────────────────────
 frontend_path = Path("frontend")
