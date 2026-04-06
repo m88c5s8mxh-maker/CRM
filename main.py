@@ -85,6 +85,13 @@ def get_demo_data() -> dict:
             {"id": "t6", "title": "Kampagnenbericht Q3", "prio": "mittel", "due": "2024-11-30", "type": "Bericht", "kunde": "", "done": True, "user": "Marc"},
         ],
         "calls": [],
+        "contacts": [
+            {"id": "ct1", "name": "Marco Rossi", "firma": "Trattoria Bella Italia", "tel": "+49 89 123456", "email": "marco@bella.de", "tag": "kunde", "notizen": "Hauptansprechpartner", "createdBy": "Tyrone", "datum": "2024-03-15"},
+            {"id": "ct2", "name": "Hans Müller", "firma": "Sanitär Müller GmbH", "tel": "+49 711 654321", "email": "mueller@sanitaer.de", "tag": "kunde", "notizen": "", "createdBy": "Kevin", "datum": "2024-06-01"},
+            {"id": "ct3", "name": "Klaus Ziegler", "firma": "Auto Ziegler AG", "tel": "+49 221 111222", "email": "ziegler@auto.de", "tag": "kunde", "notizen": "3 Standorte", "createdBy": "Tyrone", "datum": "2024-01-20"},
+            {"id": "ct4", "name": "Dr. Braun", "firma": "Zahnarzt", "tel": "+49 30 555666", "email": "braun@zahnarzt.de", "tag": "lead", "notizen": "Demo diese Woche", "createdBy": "Marc", "datum": "2024-12-01"},
+            {"id": "ct5", "name": "Sandra Hoffmann", "firma": "Bäckerei Hoffmann", "tel": "+49 89 777888", "email": "sandra@baeckerei.de", "tag": "lead", "notizen": "Kaltakquise, interessiert", "createdBy": "Kevin", "datum": "2025-01-02"},
+        ],
         "activities": [
             {"ic": "🎯", "text": "<b>Steuerbüro Fischer</b> als Deal gewonnen!", "time": "vor 2 Std.", "user": "Tyrone", "bg": "rgba(45,122,79,.15)"},
             {"ic": "⭐", "text": "Kampagne <b>Google Boost Q4</b>: 38 neue Bewertungen", "time": "vor 4 Std.", "user": "Kevin", "bg": "rgba(192,138,48,.12)"},

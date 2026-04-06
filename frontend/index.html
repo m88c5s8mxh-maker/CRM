@@ -270,6 +270,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <button class="ntab" onclick="gv('pipeline',this)">Pipeline <span class="nc" id="nc-p">0</span></button>
   <button class="ntab" onclick="gv('kampagnen',this)">Kampagnen <span class="nc" id="nc-kp">0</span></button>
   <button class="ntab" onclick="gv('tasks',this)">Aufgaben <span class="nc" id="nc-t">0</span></button>
+  <button class="ntab" onclick="gv('kontakte',this)">Kontakte <span class="nc" id="nc-ct">0</span></button>
   <button class="ntab" onclick="gv('berichte',this)">Berichte</button>
   <button class="ntab" onclick="gv('anrufe',this)">📞 Anrufe</button>
   <button class="ntab" onclick="gv('kalender',this)">📅 Kalender</button>
@@ -408,6 +409,39 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
     </div>
   </div>
 
+  <!-- KONTAKTE -->
+  <div class="view" id="v-kontakte">
+    <div class="ph">
+      <div><div class="ph-t">Kontakte</div><div class="ph-s">Alle Ansprechpartner & Leads</div></div>
+      <div class="ph-a">
+        <label class="btn btn-g btn-sm" style="cursor:pointer">
+          📂 CSV importieren
+          <input type="file" accept=".csv" style="display:none" onchange="importCSV(this)">
+        </label>
+        <button class="btn btn-r btn-sm" onclick="openCt()">+ Kontakt hinzufügen</button>
+      </div>
+    </div>
+    <div class="fbar">
+      <div class="si"><span style="color:var(--t3)">⊞</span><input id="ct-search" placeholder="Suchen..." oninput="rKontakte()"></div>
+      <button class="ftb on" onclick="sctf('all',this)">Alle</button>
+      <button class="ftb" onclick="sctf('kunde',this)">Kunde</button>
+      <button class="ftb" onclick="sctf('lead',this)">Lead</button>
+      <button class="ftb" onclick="sctf('partner',this)">Partner</button>
+      <div style="width:1px;height:18px;background:var(--b1);margin:0 4px"></div>
+      <button class="ftb on" id="ctuf-all" onclick="sctuf('all',this)">Alle Nutzer</button>
+      <button class="ftb" id="ctuf-Tyrone" onclick="sctuf('Tyrone',this)">Tyrone</button>
+      <button class="ftb" id="ctuf-Kevin" onclick="sctuf('Kevin',this)">Kevin</button>
+      <button class="ftb" id="ctuf-Marc" onclick="sctuf('Marc',this)">Marc</button>
+    </div>
+    <div class="tbl">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 90px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)">
+        <div>Name</div><div>Telefon</div><div>E-Mail</div><div>Tag / Erstellt</div><div>Aktionen</div>
+      </div>
+      <div id="ct-body"></div>
+    </div>
+    <div id="ct-csv-preview" style="display:none;margin-top:12px"></div>
+  </div>
+
   <!-- ANRUFE -->
   <div class="view" id="v-anrufe">
     <div class="ph">
@@ -443,6 +477,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 <div class="mlay" id="modal-d"><div class="modal" id="modal-d-inner"></div></div>
 <div class="mlay" id="modal-kp"><div class="modal" id="modal-kp-inner"></div></div>
 <div class="mlay" id="modal-t"><div class="modal" id="modal-t-inner"></div></div>
+<div class="mlay" id="modal-ct"><div class="modal" id="modal-ct-inner"></div></div>
 <div class="mlay" id="modal-call"><div class="modal" id="modal-call-inner"></div></div>
 
 <!-- ACTIVE CALL BAR -->
@@ -461,7 +496,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 
 <script>
 // ── STATE & CONFIG ────────────────────────────────────────────────────────
-let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[]};
+let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[],contacts:[]};
 let curUser='', ws=null, wsRetries=0;
 let kFilter='all', kpFilter='all';
 const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
@@ -587,6 +622,7 @@ function renderView(id){
   else if(id==='kampagnen')rKamp();
   else if(id==='tasks')rTasks();
   else if(id==='berichte')rBerichte();
+  else if(id==='kontakte')rKontakte();
   else if(id==='anrufe')rAnrufe();
   else if(id==='kalender')rKalender();
 }
@@ -596,6 +632,7 @@ function updateCounts(){
   document.getElementById('nc-p').textContent=D.deals.filter(d=>d.phase!=='gewonnen').length;
   document.getElementById('nc-kp').textContent=D.kamps.filter(k=>k.status==='aktiv').length;
   document.getElementById('nc-t').textContent=D.tasks.filter(t=>!t.done).length;
+  document.getElementById('nc-ct').textContent=(D.contacts||[]).length;
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
@@ -903,6 +940,169 @@ function rBerichte(){
   const phases=['lead','kontakt','demo','angebot','gewonnen'];const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot',gewonnen:'Gewonnen'};
   const pc=phases.map(p=>D.deals.filter(d=>d.phase===p).length);const mc=Math.max(...pc,1);
   document.getElementById('fc').innerHTML=phases.map((p,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:5px 0"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);width:60px">${pL[p]}</div><div style="flex:1;height:18px;background:var(--s3);border-radius:3px;overflow:hidden"><div style="height:100%;background:${['#5a5258','#4a7a9b','#7a4a8a','#8a7a2a','#256b42'][i]};width:${Math.round(pc[i]/mc*100)}%;border-radius:3px;transition:width .5s"></div></div><div style="font-family:var(--fm);font-size:10px;color:var(--t2);width:18px;text-align:right">${pc[i]}</div></div>`).join('');
+}
+
+// ── KONTAKTE ─────────────────────────────────────────────────────────────
+let ctFilter='all', ctUserFilter='all';
+
+function sctf(f,btn){ctFilter=f;document.querySelectorAll('#v-kontakte .ftb:not([id^="ctuf-"])').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rKontakte();}
+function sctuf(f,btn){ctUserFilter=f;['all','Tyrone','Kevin','Marc'].forEach(u=>document.getElementById('ctuf-'+u)?.classList.remove('on'));btn.classList.add('on');rKontakte();}
+
+function rKontakte(){
+  if(!D.contacts) D.contacts=[];
+  const q=(document.getElementById('ct-search')?.value||'').toLowerCase();
+  const list=D.contacts.filter(c=>{
+    if(ctFilter!=='all'&&c.tag!==ctFilter)return false;
+    if(ctUserFilter!=='all'&&c.createdBy!==ctUserFilter)return false;
+    if(q&&!c.name.toLowerCase().includes(q)&&!(c.firma||'').toLowerCase().includes(q)&&!(c.tel||'').includes(q))return false;
+    return true;
+  });
+  const el=document.getElementById('ct-body');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="ei">👤</div><div class="et">Keine Kontakte gefunden</div><button class="btn btn-r" style="margin-top:8px" onclick="openCt()">+ Ersten Kontakt anlegen</button></div>';
+    return;
+  }
+  const tagCol={kunde:'b-g',lead:'b-a',partner:'b-r'};
+  el.innerHTML=list.map(c=>`
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 90px;padding:10px 14px;border-bottom:1px solid var(--b1);align-items:center;transition:background .1s" onmouseover="this.style.background='rgba(192,57,43,.05)'" onmouseout="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:50%;background:${UC[c.createdBy]||'var(--s4)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${c.name[0].toUpperCase()}</div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--t1)">${c.name}</div><div style="font-size:10px;color:var(--t3)">${c.firma||'—'}</div></div>
+      </div>
+      <div>${c.tel?`<span style="color:var(--red2);cursor:pointer;font-size:11px;font-family:var(--fm)" onclick="openCallWith2('${c.id}')">📞 ${c.tel}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</div>
+      <div style="font-size:11px;color:var(--t2)">${c.email||'—'}</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        ${c.tag?`<span class="badge ${tagCol[c.tag]||'b-gr'}" style="font-size:8px">${c.tag}</span>`:''}
+        ${c.createdBy?`<span style="font-size:9px;color:${UC[c.createdBy]||'var(--t3)'};font-family:var(--fm)">${c.createdBy}</span>`:''}
+      </div>
+      <div style="display:flex;gap:4px">
+        ${c.tel?`<button class="btn btn-g btn-sm" onclick="openCallWith2('${c.id}')" title="Anrufen">📞</button>`:''}
+        <button class="btn btn-g btn-sm" onclick="openCt('${c.id}')">✏</button>
+        <button class="btn btn-g btn-sm" onclick="delCt('${c.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function openCt(id){
+  const c=id?D.contacts.find(x=>x.id===id):{};
+  const tagOpts=['kunde','lead','partner','sonstiges'].map(t=>`<option value="${t}"${c.tag===t?' selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('');
+  const userOpts=['Tyrone','Kevin','Marc'].map(u=>`<option${(c.createdBy||curUser)===u?' selected':''}>${u}</option>`).join('');
+  document.getElementById('modal-ct-inner').innerHTML=`
+    <div class="mhd"><div class="mt">${id?'Kontakt bearbeiten':'Neuer Kontakt'}</div><button class="mcl" onclick="cm('modal-ct')">✕</button></div>
+    <div class="mbd">
+      <div class="frow">
+        <div class="fg"><div class="fl">Name *</div><input id="ct-nm" value="${c.name||''}" placeholder="Max Mustermann"></div>
+        <div class="fg"><div class="fl">Firma</div><input id="ct-fi" value="${c.firma||''}" placeholder="Firma GmbH"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Telefon</div><input id="ct-tel" value="${c.tel||''}" placeholder="+49 89 123456"></div>
+        <div class="fg"><div class="fl">E-Mail</div><input id="ct-em" value="${c.email||''}" placeholder="max@firma.de"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Tag</div><select id="ct-tag">${tagOpts}</select></div>
+        <div class="fg"><div class="fl">Zugewiesen an</div><select id="ct-user">${userOpts}</select></div>
+      </div>
+      <div class="fg"><div class="fl">Notizen</div><textarea id="ct-no">${c.notizen||''}</textarea></div>
+    </div>
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-ct')">Abbrechen</button><button class="btn btn-r" onclick="saveCt('${id||''}')">Speichern</button></div>`;
+  om('modal-ct');
+}
+
+function saveCt(id){
+  if(!D.contacts) D.contacts=[];
+  const nm=document.getElementById('ct-nm').value.trim();
+  if(!nm){toast('Name erforderlich','!');return;}
+  const existing=id?D.contacts.find(c=>c.id===id):{};
+  const data={id:id||'ct'+Date.now(),name:nm,firma:document.getElementById('ct-fi').value,tel:document.getElementById('ct-tel').value,email:document.getElementById('ct-em').value,tag:document.getElementById('ct-tag').value,notizen:document.getElementById('ct-no').value,createdBy:document.getElementById('ct-user').value||curUser,datum:id?(existing?.datum||today()):today()};
+  if(id) D.contacts=D.contacts.map(c=>c.id===id?data:c);
+  else D.contacts.unshift(data);
+  pushUpdate('contacts');cm('modal-ct');rKontakte();updateCounts();
+  toast(id?'Kontakt aktualisiert':'Kontakt gespeichert');
+}
+
+function delCt(id){
+  if(!confirm('Kontakt löschen?'))return;
+  D.contacts=(D.contacts||[]).filter(c=>c.id!==id);
+  pushUpdate('contacts');rKontakte();updateCounts();toast('Gelöscht');
+}
+
+function openCallWith2(ctId){
+  if(!curUser){toast('Bitte zuerst Nutzer wählen','⚠️');return;}
+  const c=D.contacts.find(x=>x.id===ctId);
+  if(!c)return;
+  const kundeOpts='<option value="">— Kein Kunde —</option>'+D.kunden.map(k=>`<option value="${k.id}">${k.name}</option>`).join('');
+  document.getElementById('modal-call-inner').innerHTML=`
+    <div class="mhd"><div class="mt">Anruf: ${c.name}</div><button class="mcl" onclick="cm('modal-call')">✕</button></div>
+    <div class="mbd">
+      <div class="fg"><div class="fl">Telefonnummer</div><input id="call-tel" value="${c.tel||''}" placeholder="+49 89 123456" style="font-size:13px;font-weight:600"></div>
+      <div class="fg"><div class="fl">Kundenbezug (optional)</div><select id="call-ku">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Notizen</div><textarea id="call-no" placeholder="Gesprächsthema..."></textarea></div>
+    </div>
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Anrufen</button></div>`;
+  om('modal-call');
+}
+
+// ── CSV IMPORT ────────────────────────────────────────────────────────────
+function importCSV(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim());
+    if(!lines.length){toast('Leere Datei','⚠️');return;}
+    // Detect header
+    const header=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+    const colMap={
+      name: header.findIndex(h=>h.includes('name')||h.includes('vorname')||h.includes('nachname')),
+      tel:  header.findIndex(h=>h.includes('tel')||h.includes('phone')||h.includes('mobil')||h.includes('nummer')),
+      email:header.findIndex(h=>h.includes('mail')||h.includes('email')),
+      firma:header.findIndex(h=>h.includes('firma')||h.includes('company')||h.includes('unternehmen')),
+      notizen:header.findIndex(h=>h.includes('notiz')||h.includes('note')||h.includes('kommentar')),
+    };
+    const parsed=[];
+    const start=colMap.name>=0?1:0; // skip header if found
+    for(let i=start;i<lines.length;i++){
+      const cols=lines[i].split(',').map(c=>c.trim().replace(/^["']|["']$/g,''));
+      if(!cols.length||!cols[0])continue;
+      parsed.push({
+        id:'ct'+Date.now()+i,
+        name:colMap.name>=0?(cols[colMap.name]||'Unbekannt'):(cols[0]||'Unbekannt'),
+        tel: colMap.tel>=0?(cols[colMap.tel]||''):'',
+        email:colMap.email>=0?(cols[colMap.email]||''):'',
+        firma:colMap.firma>=0?(cols[colMap.firma]||''):'',
+        notizen:colMap.notizen>=0?(cols[colMap.notizen]||''):'',
+        tag:'lead', createdBy:curUser||'', datum:today()
+      });
+    }
+    if(!parsed.length){toast('Keine Kontakte gefunden','⚠️');return;}
+    // Show preview
+    const prev=document.getElementById('ct-csv-preview');
+    prev.style.display='block';
+    prev.innerHTML=`<div class="card"><div class="ch"><span class="ct">CSV Vorschau — ${parsed.length} Kontakte</span>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-g btn-sm" onclick="document.getElementById('ct-csv-preview').style.display='none'">Abbrechen</button>
+        <button class="btn btn-r btn-sm" onclick="confirmCSV(${JSON.stringify(parsed).replace(/"/g,'&quot;')})">✓ Alle importieren</button>
+      </div></div>
+      <div class="cb" style="max-height:220px;overflow-y:auto">
+        ${parsed.slice(0,8).map(c=>`<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--b1);font-size:11px">
+          <span style="font-weight:600;color:var(--t1);min-width:140px">${c.name}</span>
+          <span style="color:var(--t3);min-width:120px">${c.tel||'—'}</span>
+          <span style="color:var(--t2)">${c.email||'—'}</span>
+          <span style="color:var(--t3)">${c.firma||''}</span>
+        </div>`).join('')}
+        ${parsed.length>8?`<div style="font-size:10px;color:var(--t3);padding:6px">... und ${parsed.length-8} weitere</div>`:''}
+      </div></div>`;
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function confirmCSV(contacts){
+  if(!D.contacts) D.contacts=[];
+  D.contacts.unshift(...contacts);
+  pushUpdate('contacts');
+  rKontakte();updateCounts();
+  document.getElementById('ct-csv-preview').style.display='none';
+  toast(`${contacts.length} Kontakte importiert ✓`,'📂');
 }
 
 // ── GOOGLE KALENDER ───────────────────────────────────────────────────────
