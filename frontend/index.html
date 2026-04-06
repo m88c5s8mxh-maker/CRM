@@ -1267,7 +1267,7 @@ function setCallStatus(txt){ const el=document.getElementById('callStatus'); if(
 async function initPlivo(){
   if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return false; }
   try{
-    const r = await fetch('/api/plivo-credentials');
+    const r = await fetch(`/api/plivo-credentials?user=${encodeURIComponent(curUser)}`);
     if(!r.ok){ toast('Plivo nicht konfiguriert — Env-Variablen prüfen','⚠️'); return false; }
     const {username, password} = await r.json();
 

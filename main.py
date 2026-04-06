@@ -19,13 +19,20 @@ import uuid
 import time
 
 # ── PLIVO ─────────────────────────────────────────────────────────────────
-PLIVO_AUTH_ID       = os.environ.get("PLIVO_AUTH_ID", "")
-PLIVO_AUTH_TOKEN    = os.environ.get("PLIVO_AUTH_TOKEN", "")
-PLIVO_PHONE_NUMBER  = os.environ.get("PLIVO_PHONE_NUMBER", "")
-PLIVO_SIP_USERNAME  = os.environ.get("PLIVO_SIP_USERNAME", "")
-PLIVO_SIP_PASSWORD  = os.environ.get("PLIVO_SIP_PASSWORD", "")
+PLIVO_AUTH_ID      = os.environ.get("PLIVO_AUTH_ID", "")
+PLIVO_AUTH_TOKEN   = os.environ.get("PLIVO_AUTH_TOKEN", "")
+PLIVO_PHONE_NUMBER = os.environ.get("PLIVO_PHONE_NUMBER", "")
 
-PLIVO_CONFIGURED = all([PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN, PLIVO_SIP_USERNAME, PLIVO_SIP_PASSWORD])
+# Ein Endpoint pro Nutzer — gleichzeitige Anrufe möglich
+PLIVO_ENDPOINTS = {
+    "Tyrone": {"username": os.environ.get("PLIVO_USER_TYRONE", ""), "password": os.environ.get("PLIVO_PASS_TYRONE", "")},
+    "Kevin":  {"username": os.environ.get("PLIVO_USER_KEVIN",  ""), "password": os.environ.get("PLIVO_PASS_KEVIN",  "")},
+    "Marc":   {"username": os.environ.get("PLIVO_USER_MARC",   ""), "password": os.environ.get("PLIVO_PASS_MARC",   "")},
+}
+
+PLIVO_CONFIGURED = bool(PLIVO_AUTH_ID and PLIVO_AUTH_TOKEN and any(
+    v["username"] for v in PLIVO_ENDPOINTS.values()
+))
 
 app = FastAPI(title="ReviewCRM", version="1.0.0")
 
@@ -234,10 +241,16 @@ def plivo_status():
     return {"configured": PLIVO_CONFIGURED}
 
 @app.get("/api/plivo-credentials")
-def plivo_credentials():
+def plivo_credentials(user: str = ""):
     if not PLIVO_CONFIGURED:
         raise HTTPException(status_code=503, detail="Plivo nicht konfiguriert")
-    return {"username": PLIVO_SIP_USERNAME, "password": PLIVO_SIP_PASSWORD}
+    endpoint = PLIVO_ENDPOINTS.get(user)
+    if not endpoint or not endpoint["username"]:
+        # Fallback: first available endpoint
+        endpoint = next((v for v in PLIVO_ENDPOINTS.values() if v["username"]), None)
+    if not endpoint:
+        raise HTTPException(status_code=503, detail="Kein Endpoint für diesen Nutzer")
+    return {"username": endpoint["username"], "password": endpoint["password"]}
 
 @app.post("/api/plivo-answer")
 async def plivo_answer(request: Request):
