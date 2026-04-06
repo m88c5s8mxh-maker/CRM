@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ReviewCRM — Echtzeit</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="setTimeout(autoConnectGCal,500)"></script>
 <style>
 :root{
   --bg:#0f0e0c;--s1:#161412;--s2:#1e1b18;--s3:#272420;--s4:#302c28;
@@ -903,6 +903,9 @@ function rBerichte(){
 // ── GOOGLE KALENDER ───────────────────────────────────────────────────────
 let GCAL_CLIENT_ID = localStorage.getItem('gcal_client_id') || '';
 let gcalToken = null;
+let gcalEventsCache = null;
+let gcalRefreshTimer = null;
+let gcalTokenClient = null;
 
 function saveGCalClientId(){
   const v = document.getElementById('gcal-client-input').value.trim();
@@ -910,19 +913,49 @@ function saveGCalClientId(){
   GCAL_CLIENT_ID = v;
   localStorage.setItem('gcal_client_id', v);
   toast('Client ID gespeichert ✓');
+  connectGCal();
+}
+
+function gcalShowConnected(){
+  document.getElementById('gcal-setup').style.display='none';
+  document.getElementById('gcal-events').style.display='block';
+  document.getElementById('gcal-connect-btn').style.display='none';
+  document.getElementById('gcal-sync-btn').style.display='inline-flex';
 }
 
 function rKalender(){
-  if(GCAL_CLIENT_ID){
-    document.getElementById('gcal-client-input').value = GCAL_CLIENT_ID;
-  }
+  if(GCAL_CLIENT_ID) document.getElementById('gcal-client-input').value = GCAL_CLIENT_ID;
   if(gcalToken){
-    document.getElementById('gcal-setup').style.display='none';
-    document.getElementById('gcal-events').style.display='block';
-    document.getElementById('gcal-connect-btn').style.display='none';
-    document.getElementById('gcal-sync-btn').style.display='inline-flex';
-    loadGCalEvents();
+    gcalShowConnected();
+    // Use cache if fresh (< 5min), else reload
+    if(gcalEventsCache && Date.now()-gcalEventsCache.ts < 5*60*1000){
+      renderGCalEvents(gcalEventsCache.items);
+    } else {
+      loadGCalEvents();
+    }
   }
+}
+
+function initGCalClient(callback){
+  if(!GCAL_CLIENT_ID||!window.google?.accounts?.oauth2) return;
+  gcalTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    callback: (resp) => {
+      if(resp.error) return;
+      gcalToken = resp.access_token;
+      // Auto-refresh 5 min before expiry
+      clearTimeout(gcalRefreshTimer);
+      const expiresIn = (resp.expires_in || 3600) - 300;
+      gcalRefreshTimer = setTimeout(()=>gcalSilentRefresh(), expiresIn * 1000);
+      if(callback) callback();
+    }
+  });
+}
+
+function gcalSilentRefresh(){
+  if(!gcalTokenClient||!GCAL_CLIENT_ID) return;
+  gcalTokenClient.requestAccessToken({prompt:''});
 }
 
 function connectGCal(){
@@ -932,36 +965,43 @@ function connectGCal(){
     else{toast('Bitte zuerst Google Client ID eintragen','⚠️');document.getElementById('gcal-client-input')?.focus();return;}
   }
   try{
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GCAL_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/calendar.readonly',
-      callback: (resp) => {
-        if(resp.error){toast('Google Auth Fehler: '+resp.error,'⚠️');return;}
-        gcalToken = resp.access_token;
-        document.getElementById('gcal-setup').style.display='none';
-        document.getElementById('gcal-events').style.display='block';
-        document.getElementById('gcal-connect-btn').style.display='none';
-        document.getElementById('gcal-sync-btn').style.display='inline-flex';
-        loadGCalEvents();
-        toast('Google Kalender verbunden ✓','📅');
-      }
+    initGCalClient(()=>{
+      gcalShowConnected();
+      loadGCalEvents();
+      toast('Google Kalender verbunden ✓','📅');
     });
-    client.requestAccessToken();
+    gcalTokenClient.requestAccessToken({prompt:'consent'});
   }catch(e){
     toast('Google API nicht geladen. Seite neu laden.','⚠️');
   }
 }
 
+function autoConnectGCal(){
+  if(!GCAL_CLIENT_ID||!window.google?.accounts?.oauth2) return;
+  try{
+    initGCalClient(()=>{
+      gcalShowConnected();
+      loadGCalEvents();
+    });
+    gcalTokenClient.requestAccessToken({prompt:''});
+  }catch(e){}
+}
+
 async function loadGCalEvents(){
-  if(!gcalToken)return;
+  if(!gcalToken) return;
   const now=new Date().toISOString();
   try{
     const res=await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?orderBy=startTime&singleEvents=true&timeMin=${encodeURIComponent(now)}&maxResults=20`,
       {headers:{Authorization:`Bearer ${gcalToken}`}}
     );
-    if(res.status===401){gcalToken=null;toast('Session abgelaufen, bitte neu verbinden','⚠️');return;}
+    if(res.status===401){
+      gcalToken=null;
+      gcalSilentRefresh();
+      return;
+    }
     const data=await res.json();
+    gcalEventsCache={items:data.items||[], ts:Date.now()};
     renderGCalEvents(data.items||[]);
   }catch(e){toast('Kalender Fehler','⚠️');}
 }
