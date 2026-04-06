@@ -478,6 +478,7 @@ function connect(user){
     const msg=JSON.parse(e.data);
     if(msg.type==='init'||msg.type==='update'){
       if(msg.data) D=msg.data;
+      saveLocal();
       updateOnline(msg.online||[]);
       renderCurrent();
       updateCounts();
@@ -514,11 +515,29 @@ function setPill(connected){
 }
 
 function pushUpdate(collection, activity=null){
-  if(!ws||ws.readyState!==1){toast('Nicht verbunden','⚠️');return;}
+  saveLocal();
+  if(!ws||ws.readyState!==1){toast('Offline — lokal gespeichert','💾');return;}
   ws.send(JSON.stringify({
     type:'update', collection, payload:D[collection],
     activity, user:curUser
   }));
+}
+
+function saveLocal(){
+  try{localStorage.setItem('crm_backup',JSON.stringify({data:D,ts:Date.now()}));}catch(e){}
+}
+
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem('crm_backup');
+    if(!raw)return false;
+    const {data,ts}=JSON.parse(raw);
+    const age=Math.round((Date.now()-ts)/1000);
+    D=data;
+    renderCurrent();updateCounts();
+    toast(`Lokaler Stand wiederhergestellt (vor ${age < 60 ? age+'s' : Math.round(age/60)+'min'})`, '💾');
+    return true;
+  }catch(e){return false;}
 }
 
 function switchUser(u){
@@ -1189,6 +1208,13 @@ function today(){return new Date().toISOString().slice(0,10);}
 // ── INIT ─────────────────────────────────────────────────────────────────
 setPill(false);
 document.getElementById('wsLbl').textContent='Nutzer wählen';
+loadLocal();
+window.addEventListener('beforeunload', e=>{
+  if(curUser&&(!ws||ws.readyState!==1)){
+    e.preventDefault();
+    e.returnValue='Es gibt ungespeicherte Änderungen.';
+  }
+});
 </script>
 </body>
 </html>
