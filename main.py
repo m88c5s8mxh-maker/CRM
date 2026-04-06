@@ -28,6 +28,7 @@ PLIVO_ENDPOINTS = {
     "Tyrone": {"username": os.environ.get("PLIVO_USER_TYRONE", ""), "password": os.environ.get("PLIVO_PASS_TYRONE", "")},
     "Kevin":  {"username": os.environ.get("PLIVO_USER_KEVIN",  ""), "password": os.environ.get("PLIVO_PASS_KEVIN",  "")},
     "Marc":   {"username": os.environ.get("PLIVO_USER_MARC",   ""), "password": os.environ.get("PLIVO_PASS_MARC",   "")},
+    "Timo":   {"username": os.environ.get("PLIVO_USER_TIMO",   ""), "password": os.environ.get("PLIVO_PASS_TIMO",   "")},
 }
 
 PLIVO_CONFIGURED = bool(PLIVO_AUTH_ID and PLIVO_AUTH_TOKEN and any(

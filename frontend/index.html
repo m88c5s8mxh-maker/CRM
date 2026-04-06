@@ -248,7 +248,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <span class="user-label">Nutzer:</span>
   <select class="user-sel" id="userSel" onchange="switchUser(this.value)">
     <option value="">Wählen...</option>
-    <option>Tyrone</option><option>Kevin</option><option>Marc</option>
+    <option>Tyrone</option><option>Kevin</option><option>Marc</option><option>Timo</option>
   </select>
   <div class="ws-pill disc" id="wsPill"><span class="ws-dot"></span><span id="wsLbl">Verbinde...</span></div>
   <div class="online-row">
@@ -321,6 +321,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
       <button class="ftb" onclick="skfu('Tyrone',this)" id="uf-Tyrone">Tyrone</button>
       <button class="ftb" onclick="skfu('Kevin',this)" id="uf-Kevin">Kevin</button>
       <button class="ftb" onclick="skfu('Marc',this)" id="uf-Marc">Marc</button>
+      <button class="ftb" onclick="skfu('Timo',this)" id="uf-Timo">Timo</button>
     </div>
     <div class="tbl">
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr 100px 90px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)">
@@ -432,6 +433,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
       <button class="ftb" id="ctuf-Tyrone" onclick="sctuf('Tyrone',this)">Tyrone</button>
       <button class="ftb" id="ctuf-Kevin" onclick="sctuf('Kevin',this)">Kevin</button>
       <button class="ftb" id="ctuf-Marc" onclick="sctuf('Marc',this)">Marc</button>
+      <button class="ftb" id="ctuf-Timo" onclick="sctuf('Timo',this)">Timo</button>
     </div>
     <div class="tbl">
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 90px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)">
@@ -499,7 +501,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[],contacts:[]};
 let curUser='', ws=null, wsRetries=0;
 let kFilter='all', kpFilter='all';
-const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
+const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a',Timo:'#2b5a7a'};
 let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
 const WS_URL=`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/`;
 
@@ -680,7 +682,7 @@ function rDash(){
 // ── KUNDEN ────────────────────────────────────────────────────────────────
 let kUserFilter='all';
 function skf(f,btn){kFilter=f;document.querySelectorAll('#v-kunden .ftb:not([id^="uf-"])').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rK();}
-function skfu(f,btn){kUserFilter=f;['all','Tyrone','Kevin','Marc'].forEach(u=>document.getElementById('uf-'+u)?.classList.remove('on'));btn.classList.add('on');rK();}
+function skfu(f,btn){kUserFilter=f;['all','Tyrone','Kevin','Marc','Timo'].forEach(u=>document.getElementById('uf-'+u)?.classList.remove('on'));btn.classList.add('on');rK();}
 function rK(){
   const q=(document.getElementById('ks')?.value||'').toLowerCase();
   const list=D.kunden.filter(k=>{
@@ -897,7 +899,7 @@ function toggleTask(id){
 function openT(id){
   const t=id?D.tasks.find(x=>x.id===id):{};
   const kundeOpts='<option value="">— Kein Bezug —</option>'+D.kunden.map(k=>`<option value="${k.id}"${t.kunde===k.id?' selected':''}>${k.name}</option>`).join('');
-  const userOpts='<option value="">— Niemand —</option>'+['Tyrone','Kevin','Marc'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
+  const userOpts='<option value="">— Niemand —</option>'+['Tyrone','Kevin','Marc','Timo'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
   document.getElementById('modal-t-inner').innerHTML=`
     <div class="mhd"><div class="mt">${id?'Aufgabe bearbeiten':'Neue Aufgabe'}</div><button class="mcl" onclick="cm('modal-t')">✕</button></div>
     <div class="mbd">
@@ -946,7 +948,7 @@ function rBerichte(){
 let ctFilter='all', ctUserFilter='all';
 
 function sctf(f,btn){ctFilter=f;document.querySelectorAll('#v-kontakte .ftb:not([id^="ctuf-"])').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rKontakte();}
-function sctuf(f,btn){ctUserFilter=f;['all','Tyrone','Kevin','Marc'].forEach(u=>document.getElementById('ctuf-'+u)?.classList.remove('on'));btn.classList.add('on');rKontakte();}
+function sctuf(f,btn){ctUserFilter=f;['all','Tyrone','Kevin','Marc','Timo'].forEach(u=>document.getElementById('ctuf-'+u)?.classList.remove('on'));btn.classList.add('on');rKontakte();}
 
 function rKontakte(){
   if(!D.contacts) D.contacts=[];
@@ -986,7 +988,7 @@ function rKontakte(){
 function openCt(id){
   const c=id?D.contacts.find(x=>x.id===id):{};
   const tagOpts=['kunde','lead','partner','sonstiges'].map(t=>`<option value="${t}"${c.tag===t?' selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('');
-  const userOpts=['Tyrone','Kevin','Marc'].map(u=>`<option${(c.createdBy||curUser)===u?' selected':''}>${u}</option>`).join('');
+  const userOpts=['Tyrone','Kevin','Marc','Timo'].map(u=>`<option${(c.createdBy||curUser)===u?' selected':''}>${u}</option>`).join('');
   document.getElementById('modal-ct-inner').innerHTML=`
     <div class="mhd"><div class="mt">${id?'Kontakt bearbeiten':'Neuer Kontakt'}</div><button class="mcl" onclick="cm('modal-ct')">✕</button></div>
     <div class="mbd">
