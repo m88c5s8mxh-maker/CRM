@@ -289,8 +289,8 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
     <div class="kpi-row">
       <div class="kpi"><div class="kic">🏢</div><div class="kl">Aktive Kunden</div><div class="kv" id="ki-k">—</div><div class="kd" id="ki-kd">gesamt</div></div>
       <div class="kpi"><div class="kic">💰</div><div class="kl">Pipeline-Wert</div><div class="kv" id="ki-p">—</div><div class="kd" id="ki-pd">offene Deals</div></div>
-      <div class="kpi"><div class="kic">⭐</div><div class="kl">Bewertungen</div><div class="kv" id="ki-r">—</div><div class="kd">erzeugt gesamt</div></div>
-      <div class="kpi"><div class="kic">📈</div><div class="kl">Ø Score</div><div class="kv" id="ki-s">—</div><div class="kd">alle Kunden</div></div>
+      <div class="kpi"><div class="kic">📞</div><div class="kl">Anrufe gesamt</div><div class="kv" id="ki-r">—</div><div class="kd">aufgezeichnet</div></div>
+      <div class="kpi"><div class="kic">✓</div><div class="kl">Offene Aufgaben</div><div class="kv" id="ki-s">—</div><div class="kd">zu erledigen</div></div>
     </div>
     <div class="g2">
       <div class="card"><div class="ch"><span class="ct">Pipeline</span><button class="btn btn-g btn-sm" onclick="gv('pipeline',null)">Alle →</button></div><div class="cb"><div class="mpip" id="d-pip"></div></div></div>
@@ -314,9 +314,16 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
       <button class="ftb" onclick="skf('aktiv',this)">Aktiv</button>
       <button class="ftb" onclick="skf('trial',this)">Trial</button>
       <button class="ftb" onclick="skf('inaktiv',this)">Inaktiv</button>
+      <div style="width:1px;height:18px;background:var(--b1);margin:0 4px"></div>
+      <button class="ftb" onclick="skfu('all',this)" id="uf-all" style="border-color:var(--rb);color:var(--red2)">Alle Nutzer</button>
+      <button class="ftb" onclick="skfu('Tyrone',this)" id="uf-Tyrone">Tyrone</button>
+      <button class="ftb" onclick="skfu('Kevin',this)" id="uf-Kevin">Kevin</button>
+      <button class="ftb" onclick="skfu('Marc',this)" id="uf-Marc">Marc</button>
     </div>
     <div class="tbl">
-      <div class="th"><div>Unternehmen</div><div>Status</div><div>Bewertungen</div><div>Score</div><div>Aktionen</div></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 100px 90px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)">
+        <div>Unternehmen</div><div>Status</div><div>Telefon</div><div>Erstellt von</div><div>Aktionen</div>
+      </div>
       <div id="k-body"></div>
     </div>
   </div>
@@ -574,11 +581,8 @@ function rDash(){
   const pv=D.deals.filter(d=>d.phase!=='gewonnen').reduce((s,d)=>s+(d.value||0),0);
   document.getElementById('ki-p').textContent='€'+pv.toLocaleString('de');
   document.getElementById('ki-pd').textContent=D.deals.filter(d=>d.phase!=='gewonnen').length+' Deals';
-  const tr=D.kunden.reduce((s,k)=>s+(k.reviews||0),0);
-  document.getElementById('ki-r').textContent=tr.toLocaleString('de');
-  const sc=D.kunden.filter(k=>k.score>0);
-  const avg=sc.length?(sc.reduce((a,b)=>a+(b.score||0),0)/sc.length).toFixed(1):'—';
-  document.getElementById('ki-s').textContent=avg+(avg!=='—'?' ★':'');
+  document.getElementById('ki-r').textContent=(D.calls||[]).length;
+  document.getElementById('ki-s').textContent=D.tasks.filter(t=>!t.done).length;
   const phases=['lead','kontakt','demo','angebot'];
   const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot'};
   document.getElementById('d-pip').innerHTML=phases.map(p=>{
@@ -592,13 +596,15 @@ function rDash(){
     `<div class="ai"><div class="adic" style="background:${a.bg||'var(--s2)'}">${a.ic}</div>
     <div><div class="at">${a.text}</div><div class="atm"><span>${a.time}</span>${a.user?`<span class="au">${a.user}</span>`:''}</div></div></div>`
   ).join('')||'<div class="empty"><div class="et">Noch keine Aktivitäten</div></div>';
-  const topK=[...D.kunden].sort((a,b)=>(b.reviews||0)-(a.reviews||0)).slice(0,4);
+  const topK=[...D.kunden].sort((a,b)=>(b.mrr||0)-(a.mrr||0)).slice(0,4);
   document.getElementById('d-topk').innerHTML=topK.map(k=>
-    `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--b1)">
+    `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="openKDetail('${k.id}')">
       <div class="klogo">${k.name[0]}</div>
       <div style="flex:1"><div class="knm">${k.name}</div><div class="ksub">${k.branche}</div></div>
-      <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--t1)">${k.reviews||0}</div>
-      <div style="font-size:10px;color:var(--gold)">★ ${k.score||'—'}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">€${(k.mrr||0).toLocaleString('de')}</div>
+        ${k.createdBy?`<div style="font-size:9px;color:${UC[k.createdBy]||'var(--t3)'};font-family:var(--fm)">${k.createdBy}</div>`:''}
+      </div>
     </div>`).join('')||'<div class="empty"><div class="et">Noch keine Kunden</div></div>';
   const open=D.tasks.filter(t=>!t.done).slice(0,4);
   document.getElementById('d-tasks').innerHTML=open.map(t=>`
@@ -611,23 +617,26 @@ function rDash(){
 }
 
 // ── KUNDEN ────────────────────────────────────────────────────────────────
-function skf(f,btn){kFilter=f;document.querySelectorAll('#v-kunden .ftb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rK();}
+let kUserFilter='all';
+function skf(f,btn){kFilter=f;document.querySelectorAll('#v-kunden .ftb:not([id^="uf-"])').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rK();}
+function skfu(f,btn){kUserFilter=f;['all','Tyrone','Kevin','Marc'].forEach(u=>document.getElementById('uf-'+u)?.classList.remove('on'));btn.classList.add('on');rK();}
 function rK(){
   const q=(document.getElementById('ks')?.value||'').toLowerCase();
   const list=D.kunden.filter(k=>{
     if(kFilter!=='all'&&k.status!==kFilter)return false;
+    if(kUserFilter!=='all'&&k.createdBy!==kUserFilter)return false;
     if(q&&!k.name.toLowerCase().includes(q)&&!(k.branche||'').toLowerCase().includes(q))return false;
     return true;
   });
   const el=document.getElementById('k-body');
   if(!list.length){el.innerHTML='<div class="empty"><div class="ei">🏢</div><div class="et">Keine Kunden gefunden</div><button class="btn btn-r" style="margin-top:8px" onclick="openK()">+ Ersten Kunden anlegen</button></div>';return;}
   const sm={aktiv:'b-g',trial:'b-a',inaktiv:'b-gr'};
-  el.innerHTML=list.map(k=>`<div class="tr" onclick="openK('${k.id}')">
+  el.innerHTML=list.map(k=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr 100px 90px;padding:10px 14px;border-bottom:1px solid var(--b1);align-items:center;cursor:pointer;transition:background .1s" onmouseover="this.style.background='rgba(192,57,43,.05)'" onmouseout="this.style.background=''" onclick="openKDetail('${k.id}')">
     <div style="display:flex;align-items:center;gap:9px"><div class="klogo">${k.name[0]}</div>
       <div><div class="knm">${k.name}</div><div class="ksub">${k.kontakt||'—'} · ${k.branche||''}</div></div></div>
     <div><span class="badge ${sm[k.status]||'b-gr'}">${k.status}</span></div>
-    <div style="font-size:12px;font-weight:700;color:var(--t1)">${(k.reviews||0).toLocaleString('de')}</div>
-    <div style="color:var(--gold);font-size:11px">${'★'.repeat(Math.round(k.score||0))} <span style="color:var(--t3);font-size:10px">${k.score||'—'}</span></div>
+    <div>${k.tel?`<span style="font-size:11px;color:var(--red2);cursor:pointer;font-family:var(--fm)" onclick="event.stopPropagation();openCallWith('${k.id}')" title="Anruf starten">📞 ${k.tel}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</div>
+    <div>${k.createdBy?`<span style="font-size:10px;font-weight:600;color:${UC[k.createdBy]||'var(--t3)'};background:${UC[k.createdBy]||'#333'}22;padding:2px 7px;border-radius:4px;font-family:var(--fm)">${k.createdBy}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</div>
     <div style="display:flex;gap:4px">
       <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openK('${k.id}')">✏</button>
       <button class="btn btn-g btn-sm" onclick="event.stopPropagation();delK('${k.id}')">✕</button>
@@ -649,12 +658,12 @@ function openK(id){
         <div class="fg"><div class="fl">E-Mail</div><input id="k-em" value="${k.email||''}" placeholder="max@firma.de"></div>
       </div>
       <div class="frow">
-        <div class="fg"><div class="fl">Status</div><select id="k-st"><option value="aktiv"${k.status==='aktiv'?' selected':''}>Aktiv</option><option value="trial"${k.status==='trial'?' selected':''}>Trial</option><option value="inaktiv"${k.status==='inaktiv'?' selected':''}>Inaktiv</option></select></div>
-        <div class="fg"><div class="fl">MRR (€/mo)</div><input id="k-mr" type="number" value="${k.mrr||''}" placeholder="299"></div>
+        <div class="fg"><div class="fl">Telefonnummer</div><input id="k-tel" value="${k.tel||''}" placeholder="+49 89 123456"></div>
+        <div class="fg"><div class="fl">Website</div><input id="k-web" value="${k.website||''}" placeholder="https://firma.de"></div>
       </div>
       <div class="frow">
-        <div class="fg"><div class="fl">Bewertungen gesamt</div><input id="k-rv" type="number" value="${k.reviews||0}"></div>
-        <div class="fg"><div class="fl">Ø Score (1–5)</div><input id="k-sc" type="number" step="0.1" value="${k.score||''}" placeholder="4.5" min="1" max="5"></div>
+        <div class="fg"><div class="fl">Status</div><select id="k-st"><option value="aktiv"${k.status==='aktiv'?' selected':''}>Aktiv</option><option value="trial"${k.status==='trial'?' selected':''}>Trial</option><option value="inaktiv"${k.status==='inaktiv'?' selected':''}>Inaktiv</option></select></div>
+        <div class="fg"><div class="fl">MRR (€/mo)</div><input id="k-mr" type="number" value="${k.mrr||''}" placeholder="299"></div>
       </div>
       <div class="fg"><div class="fl">Notizen</div><textarea id="k-no">${k.notizen||''}</textarea></div>
     </div>
@@ -668,9 +677,10 @@ function openK(id){
 function saveK(id){
   const nm=document.getElementById('k-nm').value.trim();
   if(!nm){toast('Name erforderlich','!');return;}
-  const data={id:id||'k'+Date.now(),name:nm,branche:document.getElementById('k-br').value,kontakt:document.getElementById('k-ko').value,email:document.getElementById('k-em').value,status:document.getElementById('k-st').value,mrr:parseFloat(document.getElementById('k-mr').value)||0,reviews:parseInt(document.getElementById('k-rv').value)||0,score:parseFloat(document.getElementById('k-sc').value)||0,notizen:document.getElementById('k-no').value,seit:id?(D.kunden.find(k=>k.id===id)?.seit||today()):today()};
+  const existing=id?D.kunden.find(k=>k.id===id):{};
+  const data={id:id||'k'+Date.now(),name:nm,branche:document.getElementById('k-br').value,kontakt:document.getElementById('k-ko').value,email:document.getElementById('k-em').value,tel:document.getElementById('k-tel').value,website:document.getElementById('k-web').value,status:document.getElementById('k-st').value,mrr:parseFloat(document.getElementById('k-mr').value)||0,notizen:document.getElementById('k-no').value,seit:id?(existing?.seit||today()):today(),createdBy:id?(existing?.createdBy||curUser):curUser};
   if(id)D.kunden=D.kunden.map(k=>k.id===id?data:k);
-  else{D.kunden.unshift(data);}
+  else D.kunden.unshift(data);
   const act=!id?{ic:'🏢',text:`<b>${nm}</b> als Kunde hinzugefügt`,time:'gerade eben',user:curUser||'—',bg:'rgba(192,57,43,.12)'}:null;
   if(act)D.activities.unshift(act);
   pushUpdate('kunden',act);
@@ -695,7 +705,7 @@ function rPipeline(){
     const pv2=ds.reduce((s,d)=>s+(d.value||0),0);
     return `<div class="kcol"><div class="kch"><span class="kct"><span class="kdot" style="background:${p.c}"></span>${p.l}</span><span class="kcn">${ds.length}</span></div>
       ${ds.length?`<div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:4px">€${pv2.toLocaleString('de')}/mo</div>`:''}
-      ${ds.map(d=>`<div class="deal" onclick="openD('${d.id}')"><div class="dco">${d.company}</div><div class="dcn">${d.contact||'—'}</div><div class="dv">€${(d.value||0).toLocaleString('de')}<span style="font-size:10px;color:var(--t3)">/mo</span></div><div class="dm"><span class="dp">${d.prob||0}%</span><span class="dp">${d.close||'—'}</span></div></div>`).join('')}
+      ${ds.map(d=>`<div class="deal" onclick="openD('${d.id}')"><div class="dco">${d.company}</div><div class="dcn">${d.contact||'—'}</div><div class="dv">€${(d.value||0).toLocaleString('de')}<span style="font-size:10px;color:var(--t3)">/mo</span></div><div class="dm"><span class="dp">${d.prob||0}%</span><span class="dp">${d.close||'—'}</span></div>${d.createdBy?`<div style="margin-top:5px"><span style="font-size:9px;font-weight:600;color:${UC[d.createdBy]||'var(--t3)'};background:${UC[d.createdBy]||'#333'}22;padding:1px 5px;border-radius:3px;font-family:var(--fm)">${d.createdBy}</span></div>`:''}</div>`).join('')}
       <button class="add-d" onclick="openDPhase('${p.id}')">+ Deal</button>
     </div>`;
   }).join('');
@@ -730,7 +740,8 @@ function saveD(id){
   const co=document.getElementById('d-co').value.trim();
   if(!co){toast('Unternehmen erforderlich','!');return;}
   const wasWon=id?D.deals.find(d=>d.id===id)?.phase==='gewonnen':false;
-  const data={id:id||'d'+Date.now(),company:co,contact:document.getElementById('d-cn').value,value:parseFloat(document.getElementById('d-vl').value)||0,phase:document.getElementById('d-ph').value,prob:parseInt(document.getElementById('d-pr').value)||50,close:document.getElementById('d-cl').value,notes:document.getElementById('d-no').value};
+  const existingD=id?D.deals.find(d=>d.id===id):{};
+  const data={id:id||'d'+Date.now(),company:co,contact:document.getElementById('d-cn').value,value:parseFloat(document.getElementById('d-vl').value)||0,phase:document.getElementById('d-ph').value,prob:parseInt(document.getElementById('d-pr').value)||50,close:document.getElementById('d-cl').value,notes:document.getElementById('d-no').value,createdBy:id?(existingD?.createdBy||curUser):curUser};
   if(id)D.deals=D.deals.map(d=>d.id===id?data:d);else D.deals.unshift(data);
   const act=data.phase==='gewonnen'&&!wasWon?{ic:'🎯',text:`<b>${co}</b> als Deal gewonnen! 🎉`,time:'gerade eben',user:curUser||'—',bg:'rgba(37,107,66,.18)'}:null;
   if(act)D.activities.unshift(act);
@@ -846,7 +857,8 @@ function openT(id){
 
 function saveT(id){
   const ti=document.getElementById('t-ti').value.trim();if(!ti){toast('Titel erforderlich','!');return;}
-  const data={id:id||'t'+Date.now(),title:ti,prio:document.getElementById('t-pr').value,due:document.getElementById('t-du').value,type:document.getElementById('t-ty').value,user:document.getElementById('t-us').value,kunde:document.getElementById('t-ku').value,done:id?(D.tasks.find(t=>t.id===id)?.done||false):false};
+  const existingT=id?D.tasks.find(t=>t.id===id):{};
+  const data={id:id||'t'+Date.now(),title:ti,prio:document.getElementById('t-pr').value,due:document.getElementById('t-du').value,type:document.getElementById('t-ty').value,user:document.getElementById('t-us').value,kunde:document.getElementById('t-ku').value,done:id?(existingT?.done||false):false,createdBy:id?(existingT?.createdBy||curUser):curUser};
   if(id)D.tasks=D.tasks.map(t=>t.id===id?data:t);else D.tasks.unshift(data);
   pushUpdate('tasks');cm('modal-t');rTasks();updateCounts();
   toast(id?'Aufgabe aktualisiert':'Aufgabe gespeichert');
@@ -1067,6 +1079,94 @@ function stopCall(){
 function delCall(id){
   D.calls=(D.calls||[]).filter(c=>c.id!==id);
   pushUpdate('calls');rAnrufe();toast('Gelöscht');
+}
+
+// ── KUNDEN DETAIL ─────────────────────────────────────────────────────────
+function openCallWith(kundeId){
+  if(!curUser){toast('Bitte zuerst Nutzer wählen','⚠️');return;}
+  const k=D.kunden.find(x=>x.id===kundeId);
+  const kundeOpts='<option value="">— Kein Kunde —</option>'+D.kunden.map(c=>`<option value="${c.id}"${c.id===kundeId?' selected':''}>${c.name}</option>`).join('');
+  document.getElementById('modal-call-inner').innerHTML=`
+    <div class="mhd"><div class="mt">Anruf starten</div><button class="mcl" onclick="cm('modal-call')">✕</button></div>
+    <div class="mbd">
+      <div class="fg"><div class="fl">Kunde</div><select id="call-ku">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Notizen (optional)</div><textarea id="call-no" placeholder="Gesprächsthema..."></textarea></div>
+      <div style="background:var(--s3);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--t3);line-height:1.6">🎙 Das Mikrofon wird für die Aufnahme genutzt.<br>Die Aufnahme wird nach dem Beenden automatisch heruntergeladen.</div>
+    </div>
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Starten & Aufnehmen</button></div>`;
+  om('modal-call');
+}
+
+function openKDetail(id){
+  const k=D.kunden.find(x=>x.id===id);if(!k)return;
+  const calls=(D.calls||[]).filter(c=>c.kunde===id);
+  const tasks=D.tasks.filter(t=>t.kunde===id);
+  const sm={aktiv:'b-g',trial:'b-a',inaktiv:'b-gr'};
+  const lastCall=calls[0];
+  const fmtDur=s=>s!=null?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'—';
+  document.getElementById('modal-k-inner').innerHTML=`
+    <div class="mhd">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="klogo" style="width:36px;height:36px;font-size:16px">${k.name[0]}</div>
+        <div><div class="mt">${k.name}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">${k.branche||''} ${k.createdBy?`· <span style="color:${UC[k.createdBy]||'var(--t3)'}">${k.createdBy}</span>`:''}</div></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${sm[k.status]||'b-gr'}">${k.status}</span>
+        <button class="btn btn-g btn-sm" onclick="cm('modal-k');openK('${id}')">✏ Bearbeiten</button>
+        <button class="mcl" onclick="cm('modal-k')">✕</button>
+      </div>
+    </div>
+    <div class="mbd" style="gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--t1)">${calls.length}</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase;margin-top:2px">Anrufe</div>
+        </div>
+        <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--t1)">${tasks.filter(t=>!t.done).length}</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase;margin-top:2px">Aufgaben</div>
+        </div>
+        <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--t1)">€${(k.mrr||0).toLocaleString('de')}</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase;margin-top:2px">MRR</div>
+        </div>
+        <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">${lastCall?lastCall.datum:'—'}</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-transform:uppercase;margin-top:2px">Letzter Anruf</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
+        <div>${k.kontakt?`<div style="color:var(--t3);margin-bottom:3px;font-size:10px">Ansprechpartner</div><div style="color:var(--t1);font-weight:600">${k.kontakt}</div>`:''}
+          ${k.email?`<div style="color:var(--t3);margin-top:7px;margin-bottom:3px;font-size:10px">E-Mail</div><div style="color:var(--red2)">${k.email}</div>`:''}
+        </div>
+        <div>${k.tel?`<div style="color:var(--t3);margin-bottom:3px;font-size:10px">Telefon</div><div style="color:var(--red2);cursor:pointer;font-weight:600" onclick="cm('modal-k');openCallWith('${id}')">📞 ${k.tel}</div>`:''}
+          ${k.website?`<div style="color:var(--t3);margin-top:7px;margin-bottom:3px;font-size:10px">Website</div><a href="${k.website}" target="_blank" style="color:var(--red2)">${k.website}</a>`:''}
+        </div>
+      </div>
+      ${calls.length?`<div>
+        <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:6px">Anruf-Verlauf</div>
+        ${calls.slice(0,4).map(c=>`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--b1)">
+          <span style="font-size:11px">📞</span>
+          <div style="flex:1"><div style="font-size:11px;color:var(--t1)">${c.datum||'—'}</div>${c.notizen?`<div style="font-size:10px;color:var(--t3)">${c.notizen}</div>`:''}</div>
+          <span style="font-family:var(--fm);font-size:10px;color:#4caf82">${fmtDur(c.dauer)}</span>
+          <span style="font-size:10px;color:${UC[c.user]||'var(--t3)'};font-weight:600">${c.user||''}</span>
+        </div>`).join('')}
+      </div>`:''}
+      ${tasks.length?`<div>
+        <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:6px">Aufgaben</div>
+        ${tasks.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--b1)">
+          <div class="chk ${t.done?'done':''}" style="pointer-events:none">${t.done?'✓':''}</div>
+          <div style="flex:1;font-size:11px;color:${t.done?'var(--t3)':'var(--t1)'};${t.done?'text-decoration:line-through':''}">${t.title}</div>
+          <span style="font-family:var(--fm);font-size:9px;color:var(--t3)">${t.due||''}</span>
+        </div>`).join('')}
+      </div>`:''}
+      ${k.notizen?`<div><div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:5px">Notizen</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${k.notizen}</div></div>`:''}
+    </div>
+    <div class="mft">
+      <button class="btn btn-g" onclick="cm('modal-k')">Schließen</button>
+      <button class="btn btn-r" onclick="cm('modal-k');openCallWith('${id}')">📞 Anruf starten</button>
+    </div>`;
+  om('modal-k');
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────────────

@@ -44,11 +44,11 @@ def save_data(data: dict):
 def get_demo_data() -> dict:
     return {
         "kunden": [
-            {"id": "k1", "name": "Trattoria Bella Italia", "branche": "Restaurant", "kontakt": "Marco Rossi", "email": "marco@bella.de", "tel": "+49 89 123456", "status": "aktiv", "mrr": 299, "reviews": 127, "score": 4.8, "notizen": "Top-Kunde, will Yelp ausweiten", "seit": "2024-03-15"},
-            {"id": "k2", "name": "Sanitär Müller GmbH", "branche": "Handwerk", "kontakt": "Hans Müller", "email": "mueller@sanitaer.de", "tel": "+49 711 654321", "status": "aktiv", "mrr": 199, "reviews": 43, "score": 4.6, "notizen": "Fokus Google Bewertungen", "seit": "2024-06-01"},
-            {"id": "k3", "name": "Dr. med. Schmidt", "branche": "Medizin", "kontakt": "Dr. Petra Schmidt", "email": "praxis@schmidt.de", "tel": "+49 30 987654", "status": "trial", "mrr": 0, "reviews": 12, "score": 4.9, "notizen": "Trial bis Ende Monat", "seit": "2024-10-01"},
-            {"id": "k4", "name": "Auto Ziegler AG", "branche": "Automotive", "kontakt": "Klaus Ziegler", "email": "ziegler@auto.de", "tel": "+49 221 111222", "status": "aktiv", "mrr": 499, "reviews": 89, "score": 4.3, "notizen": "3 Standorte, Großkunde", "seit": "2024-01-20"},
-            {"id": "k5", "name": "Hotel Seehof", "branche": "Tourismus", "kontakt": "Anna Weber", "email": "weber@seehof.de", "tel": "+49 8151 333444", "status": "inaktiv", "mrr": 0, "reviews": 234, "score": 4.7, "notizen": "Vertrag abgelaufen", "seit": "2023-11-01"},
+            {"id": "k1", "name": "Trattoria Bella Italia", "branche": "Restaurant", "kontakt": "Marco Rossi", "email": "marco@bella.de", "tel": "+49 89 123456", "website": "https://bella-italia.de", "status": "aktiv", "mrr": 299, "notizen": "Top-Kunde, will Yelp ausweiten", "seit": "2024-03-15", "createdBy": "Tyrone"},
+            {"id": "k2", "name": "Sanitär Müller GmbH", "branche": "Handwerk", "kontakt": "Hans Müller", "email": "mueller@sanitaer.de", "tel": "+49 711 654321", "website": "", "status": "aktiv", "mrr": 199, "notizen": "Fokus Google Bewertungen", "seit": "2024-06-01", "createdBy": "Kevin"},
+            {"id": "k3", "name": "Dr. med. Schmidt", "branche": "Medizin", "kontakt": "Dr. Petra Schmidt", "email": "praxis@schmidt.de", "tel": "+49 30 987654", "website": "https://praxis-schmidt.de", "status": "trial", "mrr": 0, "notizen": "Trial bis Ende Monat", "seit": "2024-10-01", "createdBy": "Marc"},
+            {"id": "k4", "name": "Auto Ziegler AG", "branche": "Automotive", "kontakt": "Klaus Ziegler", "email": "ziegler@auto.de", "tel": "+49 221 111222", "website": "", "status": "aktiv", "mrr": 499, "notizen": "3 Standorte, Großkunde", "seit": "2024-01-20", "createdBy": "Tyrone"},
+            {"id": "k5", "name": "Hotel Seehof", "branche": "Tourismus", "kontakt": "Anna Weber", "email": "weber@seehof.de", "tel": "+49 8151 333444", "website": "https://hotel-seehof.de", "status": "inaktiv", "mrr": 0, "notizen": "Vertrag abgelaufen", "seit": "2023-11-01", "createdBy": "Kevin"},
         ],
         "deals": [
             {"id": "d1", "company": "Zahnarzt Dr. Braun", "contact": "Dr. Braun", "value": 349, "phase": "demo", "prob": 70, "close": "2025-01-15", "notes": "Demo diese Woche"},
