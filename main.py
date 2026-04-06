@@ -18,17 +18,14 @@ from pydantic import BaseModel, Field
 import uuid
 import time
 
-# ── TWILIO ────────────────────────────────────────────────────────────────
-TWILIO_ACCOUNT_SID   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-TWILIO_API_KEY_SID   = os.environ.get("TWILIO_API_KEY_SID", "")
-TWILIO_API_KEY_SECRET= os.environ.get("TWILIO_API_KEY_SECRET", "")
-TWILIO_TWIML_APP_SID = os.environ.get("TWILIO_TWIML_APP_SID", "")
-TWILIO_PHONE_NUMBER  = os.environ.get("TWILIO_PHONE_NUMBER", "")
+# ── PLIVO ─────────────────────────────────────────────────────────────────
+PLIVO_AUTH_ID       = os.environ.get("PLIVO_AUTH_ID", "")
+PLIVO_AUTH_TOKEN    = os.environ.get("PLIVO_AUTH_TOKEN", "")
+PLIVO_PHONE_NUMBER  = os.environ.get("PLIVO_PHONE_NUMBER", "")
+PLIVO_SIP_USERNAME  = os.environ.get("PLIVO_SIP_USERNAME", "")
+PLIVO_SIP_PASSWORD  = os.environ.get("PLIVO_SIP_PASSWORD", "")
 
-TWILIO_CONFIGURED = all([
-    TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID,
-    TWILIO_API_KEY_SECRET, TWILIO_TWIML_APP_SID
-])
+PLIVO_CONFIGURED = all([PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN, PLIVO_SIP_USERNAME, PLIVO_SIP_PASSWORD])
 
 app = FastAPI(title="ReviewCRM", version="1.0.0")
 
@@ -231,48 +228,35 @@ def reset_data():
     return {"ok": True}
 
 
-# ── TWILIO ENDPOINTS ─────────────────────────────────────────────────────
-@app.get("/api/twilio-token")
-def twilio_token(user: str = "user"):
-    if not TWILIO_CONFIGURED:
-        raise HTTPException(status_code=503, detail="Twilio nicht konfiguriert")
-    from twilio.jwt.access_token import AccessToken
-    from twilio.jwt.access_token.grants import VoiceGrant
-    token = AccessToken(
-        TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID, TWILIO_API_KEY_SECRET,
-        identity=user
-    )
-    grant = VoiceGrant(
-        outgoing_application_sid=TWILIO_TWIML_APP_SID,
-        incoming_allow=True
-    )
-    token.add_grant(grant)
-    return {"token": token.to_jwt(), "configured": True}
+# ── PLIVO ENDPOINTS ───────────────────────────────────────────────────────
+@app.get("/api/plivo-status")
+def plivo_status():
+    return {"configured": PLIVO_CONFIGURED}
 
-@app.get("/api/twilio-status")
-def twilio_status():
-    return {"configured": TWILIO_CONFIGURED}
+@app.get("/api/plivo-credentials")
+def plivo_credentials():
+    if not PLIVO_CONFIGURED:
+        raise HTTPException(status_code=503, detail="Plivo nicht konfiguriert")
+    return {"username": PLIVO_SIP_USERNAME, "password": PLIVO_SIP_PASSWORD}
 
-@app.post("/api/twiml")
-async def twiml_handler(request: Request):
+@app.post("/api/plivo-answer")
+async def plivo_answer(request: Request):
+    """Called by Plivo when a browser call is placed — returns PlivoXML."""
     form = await request.form()
-    to = form.get("To", "")
-    from twilio.twiml.voice_response import VoiceResponse, Dial
-    response = VoiceResponse()
-    if to:
-        dial = Dial(
-            caller_id=TWILIO_PHONE_NUMBER,
-            record="record-from-answer-dual",
-            recording_status_callback="/api/recording-done"
-        )
-        dial.number(to)
-        response.append(dial)
-    return Response(content=str(response), media_type="application/xml")
+    to = form.get("To", "") or form.get("to", "")
+    caller_id = PLIVO_PHONE_NUMBER or form.get("From", "")
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="{caller_id}" record="true" recordingCallback="/api/plivo-recording">
+    <Number>{to}</Number>
+  </Dial>
+</Response>"""
+    return Response(content=xml, media_type="application/xml")
 
-@app.post("/api/recording-done")
-async def recording_done(request: Request):
-    # Twilio sends recording URL here — could save to DB
-    return Response(status_code=204)
+@app.post("/api/plivo-recording")
+async def plivo_recording(request: Request):
+    # Plivo sends recording URL here after call ends
+    return Response(status_code=200)
 
 # ── FRONTEND ──────────────────────────────────────────────────────────────
 frontend_path = Path("frontend")

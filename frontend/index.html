@@ -6,7 +6,7 @@
 <title>ReviewCRM — Echtzeit</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer onload="setTimeout(autoConnectGCal,500)"></script>
-<script src="https://sdk.twilio.com/js/voice/releases/2.9.0/twilio.js"></script>
+<script src="https://cdn.plivo.com/sdk/browser/v2/plivo.js"></script>
 <style>
 :root{
   --bg:#0f0e0c;--s1:#161412;--s2:#1e1b18;--s3:#272420;--s4:#302c28;
@@ -1248,61 +1248,49 @@ function gcalAddEvent(title, date, notes=''){
   window.open(url,'_blank');
 }
 
-// ── TWILIO VOICE ─────────────────────────────────────────────────────────
-let twilioDevice = null;
-let twilioCall = null;
-let twilioReady = false;
-let twilioConfigured = false;
+// ── PLIVO VOICE ───────────────────────────────────────────────────────────
+let plivoSdk = null;
+let plivoReady = false;
+let plivoConfigured = false;
 let callMuted = false;
 
 async function checkTwilio(){
   try{
-    const r = await fetch('/api/twilio-status');
+    const r = await fetch('/api/plivo-status');
     const d = await r.json();
-    twilioConfigured = d.configured;
-  }catch(e){ twilioConfigured = false; }
-}
-
-async function initTwilio(){
-  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return false; }
-  try{
-    const r = await fetch(`/api/twilio-token?user=${encodeURIComponent(curUser)}`);
-    if(!r.ok){ toast('Twilio nicht konfiguriert','⚠️'); return false; }
-    const {token} = await r.json();
-    twilioDevice = new Twilio.Device(token, {codecPreferences:['opus','pcmu']});
-    twilioDevice.on('ready', ()=>{ twilioReady=true; });
-    twilioDevice.on('error', e=>toast('Fehler: '+e.message,'⚠️'));
-    twilioDevice.on('disconnect', ()=>{ onCallEnded(); });
-    await twilioDevice.register();
-    twilioReady = true;
-    return true;
-  }catch(e){ toast('Twilio SDK Fehler','⚠️'); return false; }
+    plivoConfigured = d.configured;
+  }catch(e){ plivoConfigured = false; }
 }
 
 function setCallStatus(txt){ const el=document.getElementById('callStatus'); if(el) el.textContent=txt; }
 
-async function makeCall(phoneNumber, kundeId){
-  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return; }
-  if(!twilioDevice || !twilioReady){
-    toast('Verbinde mit Telefonie...','📞');
-    const ok = await initTwilio();
-    if(!ok) return;
-  }
-  const k = kundeId ? D.kunden.find(x=>x.id===kundeId) : null;
-  callState.kundeId = kundeId||'';
-  callState.kundeName = k?.name || phoneNumber;
-  callState.startTime = null;
-  callState.active = true;
-  callState.notizen = '';
-
-  document.getElementById('callKundeName').textContent = callState.kundeName + (phoneNumber?' · '+phoneNumber:'');
-  setCallStatus('Verbinde...');
-  document.getElementById('callTimer').textContent = '00:00';
-  document.getElementById('callBar').classList.add('on');
-
+async function initPlivo(){
+  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return false; }
   try{
-    twilioCall = await twilioDevice.connect({ params:{ To: phoneNumber } });
-    twilioCall.on('accept', ()=>{
+    const r = await fetch('/api/plivo-credentials');
+    if(!r.ok){ toast('Plivo nicht konfiguriert — Env-Variablen prüfen','⚠️'); return false; }
+    const {username, password} = await r.json();
+
+    plivoSdk = new window.Plivo({
+      debug: 'FATAL',
+      permOnClick: true,
+      enableTracking: false,
+      closeProtection: false,
+      maxAverageBitrate: 48000,
+      allowMultipleIncomingCalls: false
+    });
+
+    plivoSdk.client.on('onLogin', ()=>{
+      plivoReady = true;
+      toast('Telefonie bereit','📞');
+    });
+    plivoSdk.client.on('onLoginFailed', ()=>{
+      toast('Plivo Login fehlgeschlagen — Zugangsdaten prüfen','⚠️');
+      plivoReady = false;
+    });
+    plivoSdk.client.on('onCalling', ()=>{ setCallStatus('Wählt...'); });
+    plivoSdk.client.on('onCallRemoteRinging', ()=>{ setCallStatus('Klingelt...'); });
+    plivoSdk.client.on('onCallAnswered', ()=>{
       callState.startTime = Date.now();
       setCallStatus('Verbunden');
       clearInterval(callState.timerInterval);
@@ -1311,15 +1299,44 @@ async function makeCall(phoneNumber, kundeId){
         document.getElementById('callTimer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
       }, 1000);
     });
-    twilioCall.on('disconnect', ()=>{ onCallEnded(); });
-    twilioCall.on('error', e=>{ toast('Anruf-Fehler: '+e.message,'⚠️'); onCallEnded(); });
+    plivoSdk.client.on('onCallTerminated', ()=>{ onCallEnded(); });
+    plivoSdk.client.on('onCallFailed', ()=>{ toast('Anruf fehlgeschlagen','⚠️'); onCallEnded(); });
+
+    plivoSdk.client.login(username, password);
+    return true;
+  }catch(e){ toast('Plivo SDK Fehler: '+e.message,'⚠️'); return false; }
+}
+
+async function makeCall(phoneNumber, kundeId){
+  if(!curUser){ toast('Bitte zuerst Nutzer wählen','⚠️'); return; }
+  if(!plivoSdk || !plivoReady){
+    toast('Verbinde Telefonie...','📞');
+    const ok = await initPlivo();
+    if(!ok) return;
+    // Wait for login
+    await new Promise(res => setTimeout(res, 2000));
+    if(!plivoReady){ toast('Plivo nicht bereit — bitte erneut versuchen','⚠️'); return; }
+  }
+  const k = kundeId ? D.kunden.find(x=>x.id===kundeId) : null;
+  callState.kundeId = kundeId||'';
+  callState.kundeName = k?.name || phoneNumber;
+  callState.startTime = null;
+  callState.active = true;
+
+  document.getElementById('callKundeName').textContent = callState.kundeName + (phoneNumber?' · '+phoneNumber:'');
+  setCallStatus('Wählt...');
+  document.getElementById('callTimer').textContent = '00:00';
+  document.getElementById('callBar').classList.add('on');
+
+  try{
+    plivoSdk.client.call(phoneNumber, {'X-PH-Destination': phoneNumber});
   }catch(e){ toast('Anruf fehlgeschlagen: '+e.message,'⚠️'); onCallEnded(); }
 }
 
 function toggleMute(){
-  if(!twilioCall) return;
+  if(!plivoSdk) return;
   callMuted = !callMuted;
-  twilioCall.mute(callMuted);
+  callMuted ? plivoSdk.client.mute() : plivoSdk.client.unmute();
   const btn = document.getElementById('muteBtn');
   if(btn){ btn.textContent = callMuted ? '🔇 Stumm' : '🎙 Ton'; btn.style.color = callMuted ? 'var(--red2)' : 'var(--t2)'; }
 }
@@ -1328,10 +1345,8 @@ function onCallEnded(){
   clearInterval(callState.timerInterval);
   const duration = callState.startTime ? Math.floor((Date.now()-callState.startTime)/1000) : 0;
   callState.active = false;
-  twilioCall = null;
   document.getElementById('callBar').classList.remove('on');
   callMuted = false;
-
   if(!D.calls) D.calls=[];
   const call={id:'c'+Date.now(),kunde:callState.kundeId,kundeName:callState.kundeName,user:curUser,datum:today(),dauer:duration,notizen:callState.notizen||''};
   D.calls.unshift(call);
@@ -1389,8 +1404,7 @@ async function startCall(){
 }
 
 function stopCall(){
-  if(twilioCall){ twilioCall.disconnect(); return; }
-  // fallback: if no twilio call active just hide bar
+  if(plivoSdk){ try{ plivoSdk.client.hangup(); }catch(e){} return; }
   clearInterval(callState.timerInterval);
   callState.active=false;
   document.getElementById('callBar').classList.remove('on');
