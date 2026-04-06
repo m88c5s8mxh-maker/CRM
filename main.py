@@ -72,6 +72,7 @@ def get_demo_data() -> dict:
             {"id": "t5", "title": "Onboarding Hotel Seehof", "prio": "niedrig", "due": "2025-01-20", "type": "Meeting", "kunde": "k5", "done": True, "user": "Dana"},
             {"id": "t6", "title": "Kampagnenbericht Q3", "prio": "mittel", "due": "2024-11-30", "type": "Bericht", "kunde": "", "done": True, "user": "Bianca"},
         ],
+        "calls": [],
         "activities": [
             {"ic": "🎯", "text": "<b>Steuerbüro Fischer</b> als Deal gewonnen!", "time": "vor 2 Std.", "user": "Emir", "bg": "rgba(45,122,79,.15)"},
             {"ic": "⭐", "text": "Kampagne <b>Google Boost Q4</b>: 38 neue Bewertungen", "time": "vor 4 Std.", "user": "Alex", "bg": "rgba(192,138,48,.12)"},

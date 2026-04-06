@@ -214,6 +214,11 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 .toast{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:8px 13px;font-size:12px;font-weight:500;color:var(--t1);transform:translateY(6px);opacity:0;transition:all .2s;display:flex;align-items:center;gap:7px;max-width:280px;pointer-events:auto}
 .toast.on{transform:translateY(0);opacity:1}
 
+/* ── CALL BAR ── */
+.call-bar{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid rgba(37,107,66,.5);border-radius:var(--r2);padding:11px 18px;display:none;align-items:center;gap:14px;z-index:150;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.call-bar.on{display:flex}
+.call-rec{width:9px;height:9px;border-radius:50%;background:#e74c3c;animation:pulse 1s infinite;flex-shrink:0}
+
 /* ── EMPTY ── */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;text-align:center;gap:9px;color:var(--t3)}
 .ei{font-size:32px;opacity:.2}
@@ -242,6 +247,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <select class="user-sel" id="userSel" onchange="switchUser(this.value)">
     <option value="">Wählen...</option>
     <option>Alex</option><option>Bianca</option><option>Chris</option><option>Dana</option><option>Emir</option>
+    <option>Tyrone</option><option>Kevin</option><option>Marc</option>
   </select>
   <div class="ws-pill disc" id="wsPill"><span class="ws-dot"></span><span id="wsLbl">Verbinde...</span></div>
   <div class="online-row">
@@ -264,6 +270,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   <button class="ntab" onclick="gv('kampagnen',this)">Kampagnen <span class="nc" id="nc-kp">0</span></button>
   <button class="ntab" onclick="gv('tasks',this)">Aufgaben <span class="nc" id="nc-t">0</span></button>
   <button class="ntab" onclick="gv('berichte',this)">Berichte</button>
+  <button class="ntab" onclick="gv('anrufe',this)">📞 Anrufe</button>
 </div>
 
 <!-- MAIN -->
@@ -350,6 +357,20 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
     </div>
   </div>
 
+  <!-- ANRUFE -->
+  <div class="view" id="v-anrufe">
+    <div class="ph">
+      <div><div class="ph-t">Anrufe</div><div class="ph-s">Anrufe starten, aufnehmen & speichern</div></div>
+      <div class="ph-a"><button class="btn btn-r btn-sm" onclick="openCall()">📞 Anruf starten</button></div>
+    </div>
+    <div class="tbl">
+      <div style="display:grid;grid-template-columns:120px 2fr 1fr 80px 80px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)">
+        <div>Datum</div><div>Kunde</div><div>Nutzer</div><div>Dauer</div><div>Aktion</div>
+      </div>
+      <div id="calls-body"></div>
+    </div>
+  </div>
+
   <!-- BERICHTE -->
   <div class="view" id="v-berichte">
     <div class="ph"><div><div class="ph-t">Berichte</div><div class="ph-s">Analyse deines Bewertungs-KI Business</div></div></div>
@@ -371,14 +392,25 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 <div class="mlay" id="modal-d"><div class="modal" id="modal-d-inner"></div></div>
 <div class="mlay" id="modal-kp"><div class="modal" id="modal-kp-inner"></div></div>
 <div class="mlay" id="modal-t"><div class="modal" id="modal-t-inner"></div></div>
+<div class="mlay" id="modal-call"><div class="modal" id="modal-call-inner"></div></div>
+
+<!-- ACTIVE CALL BAR -->
+<div class="call-bar" id="callBar">
+  <div class="call-rec"></div>
+  <span id="callKundeName" style="font-size:12px;font-weight:600;color:var(--t1)">—</span>
+  <span id="callTimer" style="font-family:var(--fm);font-size:14px;font-weight:700;color:#4caf82">00:00</span>
+  <button onclick="stopCall()" style="background:var(--red);border:none;border-radius:var(--r);padding:5px 14px;color:#fff;font-size:11px;font-weight:700;font-family:var(--ff);cursor:pointer">■ Beenden</button>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
 // ── STATE & CONFIG ────────────────────────────────────────────────────────
-let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[]};
+let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[]};
 let curUser='', ws=null, wsRetries=0;
 let kFilter='all', kpFilter='all';
-const UC={Alex:'#c0392b',Bianca:'#2d7a8a',Chris:'#7a4a8a',Dana:'#256b42',Emir:'#8a7a2d'};
+const UC={Alex:'#c0392b',Bianca:'#2d7a8a',Chris:'#7a4a8a',Dana:'#256b42',Emir:'#8a7a2d',Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
+let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
 const WS_URL=`ws://${location.host}/ws/`;
 
 // ── WEBSOCKET ─────────────────────────────────────────────────────────────
@@ -481,6 +513,7 @@ function renderView(id){
   else if(id==='kampagnen')rKamp();
   else if(id==='tasks')rTasks();
   else if(id==='berichte')rBerichte();
+  else if(id==='anrufe')rAnrufe();
 }
 
 function updateCounts(){
@@ -747,7 +780,7 @@ function toggleTask(id){
 function openT(id){
   const t=id?D.tasks.find(x=>x.id===id):{};
   const kundeOpts='<option value="">— Kein Bezug —</option>'+D.kunden.map(k=>`<option value="${k.id}"${t.kunde===k.id?' selected':''}>${k.name}</option>`).join('');
-  const userOpts='<option value="">— Niemand —</option>'+['Alex','Bianca','Chris','Dana','Emir'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
+  const userOpts='<option value="">— Niemand —</option>'+['Alex','Bianca','Chris','Dana','Emir','Tyrone','Kevin','Marc'].map(u=>`<option${t.user===u?' selected':''}>${u}</option>`).join('');
   document.getElementById('modal-t-inner').innerHTML=`
     <div class="mhd"><div class="mt">${id?'Aufgabe bearbeiten':'Neue Aufgabe'}</div><button class="mcl" onclick="cm('modal-t')">✕</button></div>
     <div class="mbd">
@@ -789,6 +822,103 @@ function rBerichte(){
   const phases=['lead','kontakt','demo','angebot','gewonnen'];const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot',gewonnen:'Gewonnen'};
   const pc=phases.map(p=>D.deals.filter(d=>d.phase===p).length);const mc=Math.max(...pc,1);
   document.getElementById('fc').innerHTML=phases.map((p,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:5px 0"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);width:60px">${pL[p]}</div><div style="flex:1;height:18px;background:var(--s3);border-radius:3px;overflow:hidden"><div style="height:100%;background:${['#5a5258','#4a7a9b','#7a4a8a','#8a7a2a','#256b42'][i]};width:${Math.round(pc[i]/mc*100)}%;border-radius:3px;transition:width .5s"></div></div><div style="font-family:var(--fm);font-size:10px;color:var(--t2);width:18px;text-align:right">${pc[i]}</div></div>`).join('');
+}
+
+// ── ANRUFE ────────────────────────────────────────────────────────────────
+function rAnrufe(){
+  if(!D.calls)D.calls=[];
+  const el=document.getElementById('calls-body');
+  if(!D.calls.length){el.innerHTML='<div class="empty"><div class="ei">📞</div><div class="et">Noch keine Anrufe aufgezeichnet</div><button class="btn btn-r" style="margin-top:8px" onclick="openCall()">📞 Ersten Anruf starten</button></div>';return;}
+  el.innerHTML=D.calls.map(c=>`<div style="display:grid;grid-template-columns:120px 2fr 1fr 80px 80px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--b1);cursor:default">
+    <div style="font-family:var(--fm);font-size:10px;color:var(--t3)">${c.datum||'—'}</div>
+    <div><div style="font-size:12px;font-weight:600;color:var(--t1)">${c.kundeName||'—'}</div>${c.notizen?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${c.notizen}</div>`:''}</div>
+    <div style="font-size:11px;color:${UC[c.user]||'var(--t3)'};font-weight:600">${c.user||'—'}</div>
+    <div style="font-family:var(--fm);font-size:11px;color:#4caf82">${c.dauer!=null?Math.floor(c.dauer/60)+':'+String(c.dauer%60).padStart(2,'0'):'—'}</div>
+    <div><button class="btn btn-g btn-sm" onclick="delCall('${c.id}')">✕</button></div>
+  </div>`).join('');
+}
+
+function openCall(){
+  if(!curUser){toast('Bitte zuerst Nutzer wählen','⚠️');return;}
+  const kundeOpts='<option value="">— Kein Kunde —</option>'+D.kunden.map(k=>`<option value="${k.id}">${k.name}</option>`).join('');
+  document.getElementById('modal-call-inner').innerHTML=`
+    <div class="mhd"><div class="mt">Anruf starten</div><button class="mcl" onclick="cm('modal-call')">✕</button></div>
+    <div class="mbd">
+      <div class="fg"><div class="fl">Kunde</div><select id="call-ku">${kundeOpts}</select></div>
+      <div class="fg"><div class="fl">Notizen (optional)</div><textarea id="call-no" placeholder="Gesprächsthema..."></textarea></div>
+      <div style="background:var(--s3);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--t3);line-height:1.6">
+        🎙 Das Mikrofon wird für die Aufnahme genutzt.<br>Die Aufnahme wird nach dem Beenden automatisch heruntergeladen.
+      </div>
+    </div>
+    <div class="mft"><button class="btn btn-g" onclick="cm('modal-call')">Abbrechen</button><button class="btn btn-r" onclick="startCall()">📞 Starten & Aufnehmen</button></div>`;
+  om('modal-call');
+}
+
+async function startCall(){
+  if(!curUser){toast('Bitte zuerst Nutzer wählen','⚠️');return;}
+  const kundeId=document.getElementById('call-ku').value;
+  const notizen=document.getElementById('call-no').value.trim();
+  const kd=kundeId?D.kunden.find(k=>k.id===kundeId):null;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    callState.stream=stream;
+    callState.audioChunks=[];
+    callState.kundeId=kundeId;
+    callState.kundeName=kd?.name||'Kein Kunde';
+    callState.notizen=notizen;
+    callState.startTime=Date.now();
+    callState.active=true;
+    const mr=new MediaRecorder(stream);
+    callState.mediaRecorder=mr;
+    mr.ondataavailable=e=>{if(e.data.size>0)callState.audioChunks.push(e.data);};
+    mr.start(1000);
+    cm('modal-call');
+    document.getElementById('callKundeName').textContent=callState.kundeName;
+    document.getElementById('callTimer').textContent='00:00';
+    document.getElementById('callBar').classList.add('on');
+    callState.timerInterval=setInterval(()=>{
+      const s=Math.floor((Date.now()-callState.startTime)/1000);
+      const m=Math.floor(s/60),sec=s%60;
+      document.getElementById('callTimer').textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+    },1000);
+    toast('Aufnahme läuft 🔴');
+  }catch(e){
+    toast('Mikrofon-Zugriff verweigert ⚠️');
+  }
+}
+
+function stopCall(){
+  if(!callState.active)return;
+  clearInterval(callState.timerInterval);
+  const duration=Math.floor((Date.now()-callState.startTime)/1000);
+  callState.mediaRecorder.onstop=()=>{
+    const blob=new Blob(callState.audioChunks,{type:'audio/webm'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`anruf_${callState.kundeName.replace(/\s+/g,'_')}_${today()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if(!D.calls)D.calls=[];
+    const call={id:'c'+Date.now(),kunde:callState.kundeId,kundeName:callState.kundeName,user:curUser,datum:today(),dauer:duration,notizen:callState.notizen||''};
+    D.calls.unshift(call);
+    const mm=Math.floor(duration/60),ss=String(duration%60).padStart(2,'0');
+    const act={ic:'📞',text:`Anruf mit <b>${callState.kundeName}</b> (${mm}:${ss})`,time:'gerade eben',user:curUser,bg:'rgba(74,122,155,.15)'};
+    D.activities.unshift(act);
+    pushUpdate('calls',act);
+    if(curView==='anrufe')rAnrufe();
+    rDash();
+    toast('Anruf gespeichert & heruntergeladen ✓');
+  };
+  callState.mediaRecorder.stop();
+  callState.stream.getTracks().forEach(t=>t.stop());
+  callState.active=false;
+  document.getElementById('callBar').classList.remove('on');
+}
+
+function delCall(id){
+  D.calls=(D.calls||[]).filter(c=>c.id!==id);
+  pushUpdate('calls');rAnrufe();toast('Gelöscht');
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────────────
