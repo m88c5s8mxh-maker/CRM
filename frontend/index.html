@@ -461,7 +461,7 @@ let curUser='', ws=null, wsRetries=0;
 let kFilter='all', kpFilter='all';
 const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a'};
 let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
-const WS_URL=`ws://${location.host}/ws/`;
+const WS_URL=`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/`;
 
 // ── WEBSOCKET ─────────────────────────────────────────────────────────────
 function connect(user){
