@@ -1,5 +1,5 @@
 """
-ReviewCRM — Echtzeit Backend
+MorioCRM — Echtzeit Backend
 FastAPI + WebSockets: alle Nutzer sehen Änderungen sofort
 
 Start: uvicorn main:app --reload --port 8000
@@ -36,7 +36,7 @@ PLIVO_CONFIGURED = bool(PLIVO_AUTH_ID and PLIVO_AUTH_TOKEN and any(
     v["username"] for v in PLIVO_ENDPOINTS.values()
 ))
 
-app = FastAPI(title="ReviewCRM", version="1.0.0")
+app = FastAPI(title="MorioCRM", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -295,7 +295,7 @@ if frontend_path.exists():
 else:
     @app.get("/")
     def root():
-        return HTMLResponse("<h1>ReviewCRM — frontend/ Ordner fehlt</h1>")
+        return HTMLResponse("<h1>MorioCRM — frontend/ Ordner fehlt</h1>")
 
 
 if __name__ == "__main__":
