@@ -299,8 +299,8 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
       <div class="card"><div class="ch"><span class="ct">Aktivitäten</span></div><div class="cb"><div id="d-act"></div></div></div>
     </div>
     <div class="g2b">
-      <div class="card"><div class="ch"><span class="ct">Top Kunden</span></div><div class="cb" id="d-topk"></div></div>
-      <div class="card"><div class="ch"><span class="ct">Offene Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">→</button></div><div class="cb" id="d-tasks"></div></div>
+      <div class="card"><div class="ch"><span class="ct" id="d-topk-title">Meine Kunden</span><button class="btn btn-g btn-sm" onclick="gv('kunden',null)">Alle →</button></div><div class="cb" id="d-topk"></div></div>
+      <div class="card"><div class="ch"><span class="ct">Meine Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">→</button></div><div class="cb" id="d-tasks"></div></div>
     </div>
   </div>
 
@@ -593,6 +593,9 @@ function switchUser(u){
   const h=new Date().getHours();
   document.getElementById('dash-t').textContent='Dashboard';
   document.getElementById('dash-s').textContent=(h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+' '+u+'!';
+  // Navigate to dashboard and show user-filtered view
+  gv('dash', document.querySelector('.ntab'));
+  rDash();
 }
 
 function updateOnline(users){
@@ -643,44 +646,65 @@ function updateCounts(){
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
 function rDash(){
-  const ak=D.kunden.filter(k=>k.status==='aktiv');
-  document.getElementById('ki-k').textContent=ak.length;
-  const pv=D.deals.filter(d=>d.phase!=='gewonnen').reduce((s,d)=>s+(d.value||0),0);
+  // Filter by current user if logged in
+  const myKunden = curUser ? D.kunden.filter(k=>k.createdBy===curUser) : D.kunden;
+  const myDeals  = curUser ? D.deals.filter(d=>d.createdBy===curUser)  : D.deals;
+  const myCalls  = curUser ? (D.calls||[]).filter(c=>c.user===curUser)  : (D.calls||[]);
+  const myTasks  = curUser ? D.tasks.filter(t=>t.user===curUser)        : D.tasks;
+
+  // KPIs — meine Zahlen
+  document.getElementById('ki-k').textContent=myKunden.filter(k=>k.status==='aktiv').length;
+  const pv=myDeals.filter(d=>d.phase!=='gewonnen').reduce((s,d)=>s+(d.value||0),0);
   document.getElementById('ki-p').textContent='€'+pv.toLocaleString('de');
-  document.getElementById('ki-pd').textContent=D.deals.filter(d=>d.phase!=='gewonnen').length+' Deals';
-  document.getElementById('ki-r').textContent=(D.calls||[]).length;
-  document.getElementById('ki-s').textContent=D.tasks.filter(t=>!t.done).length;
+  document.getElementById('ki-pd').textContent=myDeals.filter(d=>d.phase!=='gewonnen').length+' Deals';
+  document.getElementById('ki-r').textContent=myCalls.length;
+  document.getElementById('ki-s').textContent=myTasks.filter(t=>!t.done).length;
+
+  // Pipeline — meine Deals
   const phases=['lead','kontakt','demo','angebot'];
   const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot'};
   document.getElementById('d-pip').innerHTML=phases.map(p=>{
-    const ds=D.deals.filter(x=>x.phase===p);
+    const ds=myDeals.filter(x=>x.phase===p);
     return `<div class="mpc"><div class="mph"><span>${pL[p]}</span><span>${ds.length}</span></div>
       ${ds.map(d=>`<div class="mpd" onclick="gv('pipeline',null)"><div class="mpn">${d.company}</div><div class="mpv">€${(d.value||0).toLocaleString('de')}/mo</div></div>`).join('')}
       ${!ds.length?'<div style="font-size:10px;color:var(--t3);text-align:center;padding:7px">—</div>':''}
     </div>`;
   }).join('');
-  document.getElementById('d-act').innerHTML=D.activities.slice(0,5).map(a=>
+
+  // Aktivitäten — meine zuerst, dann alle
+  const myActs = D.activities.filter(a=>a.user===curUser);
+  const otherActs = D.activities.filter(a=>a.user!==curUser);
+  const acts = [...myActs, ...otherActs].slice(0,5);
+  document.getElementById('d-act').innerHTML=acts.map(a=>
     `<div class="ai"><div class="adic" style="background:${a.bg||'var(--s2)'}">${a.ic}</div>
-    <div><div class="at">${a.text}</div><div class="atm"><span>${a.time}</span>${a.user?`<span class="au">${a.user}</span>`:''}</div></div></div>`
+    <div><div class="at">${a.text}</div><div class="atm"><span>${a.time}</span>${a.user?`<span class="au" style="background:${UC[a.user]||'var(--rd)'};color:${UC[a.user]?'#fff':'var(--red2)'}">${a.user}</span>`:''}</div></div></div>`
   ).join('')||'<div class="empty"><div class="et">Noch keine Aktivitäten</div></div>';
-  const topK=[...D.kunden].sort((a,b)=>(b.mrr||0)-(a.mrr||0)).slice(0,4);
+
+  // Meine Kunden (nach MRR sortiert)
+  const topK=[...myKunden].sort((a,b)=>(b.mrr||0)-(a.mrr||0)).slice(0,4);
+  const noK = topK.length===0;
   document.getElementById('d-topk').innerHTML=topK.map(k=>
     `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="openKDetail('${k.id}')">
       <div class="klogo">${k.name[0]}</div>
-      <div style="flex:1"><div class="knm">${k.name}</div><div class="ksub">${k.branche}</div></div>
+      <div style="flex:1">
+        <div class="knm">${k.name}</div>
+        <div class="ksub">${k.branche}${k.notizen?` · <span style="color:var(--t2);font-style:italic">${k.notizen.slice(0,40)}${k.notizen.length>40?'…':''}</span>`:''}</div>
+      </div>
       <div style="text-align:right">
         <div style="font-size:12px;font-weight:700;color:var(--t1)">€${(k.mrr||0).toLocaleString('de')}</div>
-        ${k.createdBy?`<div style="font-size:9px;color:${UC[k.createdBy]||'var(--t3)'};font-family:var(--fm)">${k.createdBy}</div>`:''}
+        <div style="font-size:9px;color:var(--t3);font-family:var(--fm)">${k.status}</div>
       </div>
-    </div>`).join('')||'<div class="empty"><div class="et">Noch keine Kunden</div></div>';
-  const open=D.tasks.filter(t=>!t.done).slice(0,4);
+    </div>`).join('')||(curUser?`<div class="empty"><div class="et">Noch keine eigenen Kunden</div><button class="btn btn-r btn-sm" style="margin-top:8px" onclick="openK()">+ Ersten Kunden anlegen</button></div>`:'<div class="empty"><div class="et">Nutzer wählen</div></div>');
+
+  // Meine Aufgaben
+  const open=myTasks.filter(t=>!t.done).slice(0,4);
   document.getElementById('d-tasks').innerHTML=open.map(t=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--b1)">
       <div class="chk ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
       <div style="flex:1"><div style="font-size:11px;font-weight:500;color:var(--t1)">${t.title}</div>
         <div style="font-size:10px;color:var(--t3)">${t.type}${t.due?' · '+t.due:''}</div></div>
       <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
-    </div>`).join('')||'<div style="font-size:11px;color:var(--t3);text-align:center;padding:14px">Alle Aufgaben erledigt!</div>';
+    </div>`).join('')||'<div style="font-size:11px;color:var(--t3);text-align:center;padding:14px">Alle Aufgaben erledigt! ✓</div>';
 }
 
 // ── KUNDEN ────────────────────────────────────────────────────────────────
@@ -753,6 +777,14 @@ function saveK(id){
   pushUpdate('kunden',act);
   cm('modal-k');rK();updateCounts();rDash();
   toast(id?'Kunde aktualisiert':'Kunde gespeichert');
+}
+
+function saveKNote(id){
+  const note=document.getElementById('kdetail-note')?.value||'';
+  const k=D.kunden.find(x=>x.id===id);if(!k)return;
+  k.notizen=note;
+  pushUpdate('kunden');
+  toast('Notiz gespeichert ✓');
 }
 
 function delK(id){
@@ -1500,7 +1532,13 @@ function openKDetail(id){
           <span style="font-family:var(--fm);font-size:9px;color:var(--t3)">${t.due||''}</span>
         </div>`).join('')}
       </div>`:''}
-      ${k.notizen?`<div><div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:5px">Notizen</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${k.notizen}</div></div>`:''}
+      <div>
+        <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
+          Notizen
+          <button onclick="saveKNote('${k.id}')" style="background:var(--red);border:none;border-radius:4px;padding:2px 8px;color:#fff;font-size:9px;font-family:var(--ff);cursor:pointer">Speichern</button>
+        </div>
+        <textarea id="kdetail-note" style="width:100%;min-height:60px;font-size:11px;color:var(--t2);background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:7px 9px;resize:vertical;font-family:var(--ff)">${k.notizen||''}</textarea>
+      </div>
     </div>
     <div class="mft">
       <button class="btn btn-g" onclick="cm('modal-k')">Schließen</button>
