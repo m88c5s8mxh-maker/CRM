@@ -8,6 +8,7 @@ Start: uvicorn main:app --reload --port 8000
 import json
 import asyncio
 import os
+import threading
 from pathlib import Path
 from typing import Dict, Set, Optional, List, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
@@ -55,8 +56,22 @@ def load_data() -> dict:
             pass
     return get_demo_data()
 
+_save_lock = threading.Lock()
+_save_pending = False
+
 def save_data(data: dict):
-    DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    """Non-blocking debounced save — writes in background thread, max once per second."""
+    global _save_pending
+    if _save_pending:
+        return
+    _save_pending = True
+    snapshot = json.dumps(data, ensure_ascii=False, indent=2)
+    def _write():
+        global _save_pending
+        with _save_lock:
+            DATA_FILE.write_text(snapshot, encoding="utf-8")
+        _save_pending = False
+    threading.Thread(target=_write, daemon=True).start()
 
 def get_demo_data() -> dict:
     return {
@@ -191,11 +206,12 @@ async def websocket_endpoint(websocket: WebSocket, user: str):
                     DB["activities"] = DB["activities"][:50]
                     save_data(DB)
 
-                # Broadcast an alle anderen
+                # Broadcast nur die geänderte Collection (nicht das ganze DB)
                 await mgr.broadcast({
                     "type": "update",
                     "collection": collection,
-                    "data": DB,
+                    "payload": DB.get(collection),
+                    "activities": DB.get("activities"),
                     "action": action,
                     "user": actor,
                     "online": mgr.online_users()

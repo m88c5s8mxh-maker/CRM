@@ -499,7 +499,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 <script>
 // ── STATE & CONFIG ────────────────────────────────────────────────────────
 let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[],contacts:[]};
-let curUser='', ws=null, wsRetries=0;
+let curUser='', ws=null, wsRetries=0, wsPingInterval=null;
 let kFilter='all', kpFilter='all';
 const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a',Timo:'#2b5a7a'};
 let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
@@ -518,15 +518,18 @@ function connect(user){
 
   ws.onmessage=e=>{
     const msg=JSON.parse(e.data);
-    if(msg.type==='init'||msg.type==='update'){
+    if(msg.type==='init'){
       if(msg.data) D=msg.data;
       saveLocal();
       updateOnline(msg.online||[]);
-      renderCurrent();
-      updateCounts();
-      if(msg.type==='update'&&msg.user&&msg.user!==curUser){
-        showNotif(`${msg.user} hat gerade etwas geändert`);
-      }
+      renderCurrent();updateCounts();
+    } else if(msg.type==='update'){
+      if(msg.collection && msg.payload !== undefined) D[msg.collection]=msg.payload;
+      if(msg.activities) D.activities=msg.activities;
+      saveLocal();
+      updateOnline(msg.online||[]);
+      renderCurrent();updateCounts();
+      if(msg.user&&msg.user!==curUser) showNotif(`${msg.user} hat gerade etwas geändert`);
     } else if(msg.type==='user_joined'){
       updateOnline(msg.online||[]);
       if(msg.user!==curUser) showNotif(msg.user+' ist jetzt online');
@@ -545,8 +548,9 @@ function connect(user){
     }
   };
 
-  // Ping alle 30s
-  setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},30000);
+  // Ping alle 30s — nur ein Interval gleichzeitig
+  clearInterval(wsPingInterval);
+  wsPingInterval = setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},30000);
 }
 
 function setPill(connected){
