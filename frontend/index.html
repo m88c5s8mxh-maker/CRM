@@ -295,12 +295,11 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
       <div class="kpi"><div class="kic">✓</div><div class="kl">Offene Aufgaben</div><div class="kv" id="ki-s">—</div><div class="kd">zu erledigen</div></div>
     </div>
     <div class="g2">
-      <div class="card"><div class="ch"><span class="ct">Pipeline</span><button class="btn btn-g btn-sm" onclick="gv('pipeline',null)">Alle →</button></div><div class="cb"><div class="mpip" id="d-pip"></div></div></div>
+      <div class="card"><div class="ch"><span class="ct">Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">Alle →</button></div><div class="cb"><div id="d-pip"></div></div></div>
       <div class="card"><div class="ch"><span class="ct">Aktivitäten</span></div><div class="cb"><div id="d-act"></div></div></div>
     </div>
     <div class="g2b">
       <div class="card"><div class="ch"><span class="ct" id="d-topk-title">Meine Kunden</span><button class="btn btn-g btn-sm" onclick="gv('kunden',null)">Alle →</button></div><div class="cb" id="d-topk"></div></div>
-      <div class="card"><div class="ch"><span class="ct">Meine Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">→</button></div><div class="cb" id="d-tasks"></div></div>
     </div>
   </div>
 
@@ -660,16 +659,19 @@ function rDash(){
   document.getElementById('ki-r').textContent=myCalls.length;
   document.getElementById('ki-s').textContent=myTasks.filter(t=>!t.done).length;
 
-  // Pipeline — meine Deals
-  const phases=['lead','kontakt','demo','angebot'];
-  const pL={lead:'Lead',kontakt:'Kontakt',demo:'Demo',angebot:'Angebot'};
-  document.getElementById('d-pip').innerHTML=phases.map(p=>{
-    const ds=myDeals.filter(x=>x.phase===p);
-    return `<div class="mpc"><div class="mph"><span>${pL[p]}</span><span>${ds.length}</span></div>
-      ${ds.map(d=>`<div class="mpd" onclick="gv('pipeline',null)"><div class="mpn">${d.company}</div><div class="mpv">€${(d.value||0).toLocaleString('de')}/mo</div></div>`).join('')}
-      ${!ds.length?'<div style="font-size:10px;color:var(--t3);text-align:center;padding:7px">—</div>':''}
+  // Meine Aufgaben im Pipeline-Bereich (kombiniert)
+  const openTasks=myTasks.filter(t=>!t.done).slice(0,5);
+  document.getElementById('d-pip').innerHTML=openTasks.length?openTasks.map(t=>{
+    const k=D.kunden.find(x=>x.id===t.kunde);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="showTaskDetail('${t.id}')">
+      <div class="chk" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:600;color:var(--t1)">${t.title}${k?` <span style="color:var(--t2)">· ${k.name}</span>`:''}</div>
+        <div style="font-size:10px;color:var(--t3)">${t.type}${t.due?' · '+t.due:''}${k?' · '+k.status:''}</div>
+      </div>
+      <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
     </div>`;
-  }).join('');
+  }).join(''):'<div style="font-size:11px;color:var(--t3);text-align:center;padding:14px">Alle Aufgaben erledigt! ✓</div>';
 
   // Aktivitäten — meine zuerst, dann alle
   const myActs = D.activities.filter(a=>a.user===curUser);
@@ -695,16 +697,6 @@ function rDash(){
         <div style="font-size:9px;color:var(--t3);font-family:var(--fm)">${k.status}</div>
       </div>
     </div>`).join('')||(curUser?`<div class="empty"><div class="et">Noch keine eigenen Kunden</div><button class="btn btn-r btn-sm" style="margin-top:8px" onclick="openK()">+ Ersten Kunden anlegen</button></div>`:'<div class="empty"><div class="et">Nutzer wählen</div></div>');
-
-  // Meine Aufgaben
-  const open=myTasks.filter(t=>!t.done).slice(0,4);
-  document.getElementById('d-tasks').innerHTML=open.map(t=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--b1)">
-      <div class="chk ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-      <div style="flex:1"><div style="font-size:11px;font-weight:500;color:var(--t1)">${t.title}</div>
-        <div style="font-size:10px;color:var(--t3)">${t.type}${t.due?' · '+t.due:''}</div></div>
-      <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
-    </div>`).join('')||'<div style="font-size:11px;color:var(--t3);text-align:center;padding:14px">Alle Aufgaben erledigt! ✓</div>';
 }
 
 // ── KUNDEN ────────────────────────────────────────────────────────────────
@@ -962,7 +954,56 @@ function saveT(id){
   pushUpdate('tasks');cm('modal-t');rTasks();updateCounts();
   toast(id?'Aufgabe aktualisiert':'Aufgabe gespeichert');
 }
-function delT(id){D.tasks=D.tasks.filter(t=>t.id!==id);pushUpdate('tasks');rTasks();updateCounts();toast('Gelöscht');}
+
+function showTaskDetail(taskId){
+  const t=D.tasks.find(x=>x.id===taskId);if(!t)return;
+  const k=D.kunden.find(x=>x.id===t.kunde);
+  const sm={aktiv:'b-g',trial:'b-a',inaktiv:'b-gr'};
+  document.getElementById('modal-t-inner').innerHTML=`
+    <div class="mhd">
+      <div><div class="mt">${t.title}</div>${k?`<div style="font-size:11px;color:var(--t3);margin-top:3px">${k.name}</div>`:''}</div>
+      <button class="mcl" onclick="cm('modal-t')">✕</button>
+    </div>
+    <div class="mbd">
+      ${k?`
+        <div style="background:var(--s2);border-radius:var(--r);padding:12px">
+          <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:6px">Kundendaten</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
+            <div>
+              <div style="color:var(--t3);font-size:10px;margin-bottom:3px">Unternehmen</div>
+              <div style="color:var(--t1);font-weight:600">${k.name}</div>
+              <div style="color:var(--t3);font-size:10px;margin-top:4px">Status</div>
+              <span class="badge ${sm[k.status]||'b-gr'}">${k.status}</span>
+            </div>
+            <div>
+              ${k.kontakt?`<div style="color:var(--t3);font-size:10px;margin-bottom:3px">Ansprechpartner</div><div style="color:var(--t1)">${k.kontakt}</div>`:''}
+              ${k.tel?`<div style="color:var(--t3);font-size:10px;margin-top:4px;margin-bottom:3px">Telefon</div><div style="color:var(--red2);cursor:pointer;font-weight:600" onclick="cm('modal-t');openCallWith('${k.id}')">📞 ${k.tel}</div>`:''}
+            </div>
+          </div>
+          ${k.branche?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b1)"><div style="color:var(--t3);font-size:10px;margin-bottom:2px">Branche</div><div style="color:var(--t2);font-size:11px">${k.branche}</div></div>`:''}
+          ${k.mrr?`<div style="margin-top:6px"><div style="color:var(--t3);font-size:10px;margin-bottom:2px">MRR</div><div style="color:var(--t1);font-weight:700;font-size:13px">€${(k.mrr||0).toLocaleString('de')}</div></div>`:''}
+        </div>
+      `:'<div style="padding:10px;color:var(--t3);font-size:11px">Kein Kundenbezug</div>'}
+      <div style="margin-top:12px">
+        <div class="fg"><div class="fl">Aufgaben-Details</div></div>
+        <div style="background:var(--s2);border-radius:var(--r);padding:10px;font-size:11px;line-height:1.6">
+          <div><strong style="color:var(--t2)">Typ:</strong> ${t.type}</div>
+          <div><strong style="color:var(--t2)">Priorität:</strong> <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}" style="margin-left:4px">${t.prio}</span></div>
+          ${t.due?`<div><strong style="color:var(--t2)">Fällig:</strong> ${t.due}</div>`:''}
+          ${t.user?`<div><strong style="color:var(--t2)">Zugewiesen:</strong> <span style="color:${UC[t.user]||'var(--t3)'};font-weight:700">${t.user}</span></div>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="mft">
+      <div style="display:flex;align-items:center;gap:8px;margin-right:auto">
+        <div class="chk ${t.done?'done':''}" onclick="toggleTask('${t.id}');setTimeout(()=>cm('modal-t'),200)" style="cursor:pointer">${t.done?'✓':''}</div>
+        <span style="font-size:11px;color:var(--t2)">${t.done?'Erledigt':'Offen'}</span>
+      </div>
+      <button class="btn btn-g" onclick="cm('modal-t')">Schließen</button>
+      <button class="btn btn-r" onclick="cm('modal-t');openT('${t.id}')">✏ Bearbeiten</button>
+    </div>`;
+  om('modal-t');
+
 
 // ── BERICHTE ─────────────────────────────────────────────────────────────
 function rBerichte(){
