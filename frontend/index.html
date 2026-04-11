@@ -288,19 +288,16 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
         <button class="btn btn-r btn-sm" onclick="openK()">+ Neuer Kunde</button>
       </div>
     </div>
-    <div class="kpi-row">
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi"><div class="kic">🏢</div><div class="kl">Aktive Kunden</div><div class="kv" id="ki-k">—</div><div class="kd" id="ki-kd">gesamt</div></div>
-      <div class="kpi"><div class="kic">💰</div><div class="kl">Pipeline-Wert</div><div class="kv" id="ki-p">—</div><div class="kd" id="ki-pd">offene Deals</div></div>
       <div class="kpi"><div class="kic">📞</div><div class="kl">Anrufe gesamt</div><div class="kv" id="ki-r">—</div><div class="kd">aufgezeichnet</div></div>
       <div class="kpi"><div class="kic">✓</div><div class="kl">Offene Aufgaben</div><div class="kv" id="ki-s">—</div><div class="kd">zu erledigen</div></div>
     </div>
-    <div class="g2">
-      <div class="card"><div class="ch"><span class="ct">Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">Alle →</button></div><div class="cb"><div id="d-pip"></div></div></div>
-      <div class="card"><div class="ch"><span class="ct">Aktivitäten</span></div><div class="cb"><div id="d-act"></div></div></div>
-    </div>
     <div class="g2b">
       <div class="card"><div class="ch"><span class="ct" id="d-topk-title">Meine Kunden</span><button class="btn btn-g btn-sm" onclick="gv('kunden',null)">Alle →</button></div><div class="cb" id="d-topk"></div></div>
+      <div class="card"><div class="ch"><span class="ct">Aktivitäten</span></div><div class="cb"><div id="d-act"></div></div></div>
     </div>
+    <div class="card"><div class="ch"><span class="ct">Aufgaben</span><button class="btn btn-g btn-sm" onclick="gv('tasks',null)">Alle →</button></div><div class="cb"><div id="d-pip"></div></div></div>
   </div>
 
   <!-- KUNDEN -->
@@ -653,21 +650,19 @@ function rDash(){
 
   // KPIs — meine Zahlen
   document.getElementById('ki-k').textContent=myKunden.filter(k=>k.status==='aktiv').length;
-  const pv=myDeals.filter(d=>d.phase!=='gewonnen').reduce((s,d)=>s+(d.value||0),0);
-  document.getElementById('ki-p').textContent='€'+pv.toLocaleString('de');
-  document.getElementById('ki-pd').textContent=myDeals.filter(d=>d.phase!=='gewonnen').length+' Deals';
   document.getElementById('ki-r').textContent=myCalls.length;
   document.getElementById('ki-s').textContent=myTasks.filter(t=>!t.done).length;
 
-  // Meine Aufgaben im Pipeline-Bereich (kombiniert)
-  const openTasks=myTasks.filter(t=>!t.done).slice(0,5);
+  // Meine Aufgaben mit Kundenstatus
+  const sm={aktiv:'b-g',trial:'b-a',inaktiv:'b-gr'};
+  const openTasks=myTasks.filter(t=>!t.done).slice(0,8);
   document.getElementById('d-pip').innerHTML=openTasks.length?openTasks.map(t=>{
     const k=D.kunden.find(x=>x.id===t.kunde);
     return `<div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="showTaskDetail('${t.id}')">
       <div class="chk" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
-      <div style="flex:1">
-        <div style="font-size:11px;font-weight:600;color:var(--t1)">${t.title}${k?` <span style="color:var(--t2)">· ${k.name}</span>`:''}</div>
-        <div style="font-size:10px;color:var(--t3)">${t.type}${t.due?' · '+t.due:''}${k?' · '+k.status:''}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${t.title}${k?`<span style="color:var(--t2);font-weight:400">· ${k.name}</span><span class="badge ${sm[k.status]||'b-gr'}" style="font-size:8px">${k.status}</span>`:''}</div>
+        <div style="font-size:10px;color:var(--t3)">${t.type}${t.due?' · '+t.due:''}</div>
       </div>
       <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
     </div>`;
@@ -899,16 +894,32 @@ function saveKp(id){
 }
 
 // ── TASKS ─────────────────────────────────────────────────────────────────
+function delT(id){
+  if(!confirm('Aufgabe löschen?'))return;
+  D.tasks=D.tasks.filter(t=>t.id!==id);
+  pushUpdate('tasks');rTasks();updateCounts();toast('Gelöscht');
+}
+
 function rTasks(){
-  const rT=t=>`<div class="ti"><div class="chk ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-    <div style="flex:1"><div class="tt ${t.done?'done':''}">${t.title}</div>
-      <div class="tm"><span>${t.type}</span>${t.due?`<span>📅 ${t.due}</span>`:''}${t.user?`<span style="color:${UC[t.user]||'var(--t3)'}">${t.user}</span>`:''}</div></div>
-    <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
-    <div style="display:flex;gap:4px;margin-left:5px">
-      <button class="btn btn-g btn-sm" onclick="gcalAddEvent('${t.title}','${t.due||today()}','${t.type}')" title="In Google Kalender">📅</button>
-      <button class="btn btn-g btn-sm" onclick="openT('${t.id}')">✏</button>
-      <button class="btn btn-g btn-sm" onclick="delT('${t.id}')">✕</button>
-    </div></div>`;
+  const sm={aktiv:'b-g',trial:'b-a',inaktiv:'b-gr'};
+  const rT=t=>{
+    const k=D.kunden.find(x=>x.id===t.kunde);
+    return `<div class="ti" style="cursor:pointer" onclick="showTaskDetail('${t.id}')">
+      <div class="chk ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="tt ${t.done?'done':''}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${t.title}${k?`<span style="font-size:10px;color:var(--t2);font-weight:400">· ${k.name}</span><span class="badge ${sm[k.status]||'b-gr'}" style="font-size:8px">${k.status}</span>`:''}
+        </div>
+        <div class="tm"><span>${t.type}</span>${t.due?`<span>📅 ${t.due}</span>`:''}${t.user?`<span style="color:${UC[t.user]||'var(--t3)'}">${t.user}</span>`:''}</div>
+      </div>
+      <span class="prio ${t.prio==='hoch'?'p-h':t.prio==='mittel'?'p-m':'p-l'}">${t.prio}</span>
+      <div style="display:flex;gap:4px;margin-left:5px" onclick="event.stopPropagation()">
+        <button class="btn btn-g btn-sm" onclick="gcalAddEvent('${t.title}','${t.due||today()}','${t.type}')" title="In Google Kalender">📅</button>
+        <button class="btn btn-g btn-sm" onclick="openT('${t.id}')">✏</button>
+        <button class="btn btn-g btn-sm" onclick="delT('${t.id}')">✕</button>
+      </div>
+    </div>`;
+  };
   const open=D.tasks.filter(t=>!t.done),done=D.tasks.filter(t=>t.done);
   document.getElementById('t-open').innerHTML=open.length?open.map(rT).join(''):'<div class="empty"><div class="et">Alles erledigt!</div></div>';
   document.getElementById('t-done').innerHTML=done.length?done.map(rT).join(''):'<div style="font-size:11px;color:var(--t3);padding:14px;text-align:center">Noch nichts erledigt</div>';
@@ -1003,7 +1014,7 @@ function showTaskDetail(taskId){
       <button class="btn btn-r" onclick="cm('modal-t');openT('${t.id}')">✏ Bearbeiten</button>
     </div>`;
   om('modal-t');
-
+}
 
 // ── BERICHTE ─────────────────────────────────────────────────────────────
 function rBerichte(){
