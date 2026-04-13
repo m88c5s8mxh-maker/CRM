@@ -1,0 +1,574 @@
+{
+  "nodes": [
+    {
+      "id": "main_py",
+      "label": "main.py",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "main_load_data",
+      "label": "load_data()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L51"
+    },
+    {
+      "id": "main_save_data",
+      "label": "save_data()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L62"
+    },
+    {
+      "id": "main_get_demo_data",
+      "label": "get_demo_data()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L76"
+    },
+    {
+      "id": "main_connectionmanager",
+      "label": "ConnectionManager",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L128"
+    },
+    {
+      "id": "main_connectionmanager_init",
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L129"
+    },
+    {
+      "id": "main_connectionmanager_connect",
+      "label": ".connect()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L132"
+    },
+    {
+      "id": "main_connectionmanager_disconnect",
+      "label": ".disconnect()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L136"
+    },
+    {
+      "id": "main_connectionmanager_broadcast",
+      "label": ".broadcast()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L139"
+    },
+    {
+      "id": "main_connectionmanager_send_to",
+      "label": ".send_to()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L151"
+    },
+    {
+      "id": "main_connectionmanager_online_users",
+      "label": ".online_users()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L159"
+    },
+    {
+      "id": "main_websocket_endpoint",
+      "label": "websocket_endpoint()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L167"
+    },
+    {
+      "id": "main_health",
+      "label": "health()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L235"
+    },
+    {
+      "id": "main_get_all",
+      "label": "get_all()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L244"
+    },
+    {
+      "id": "main_reset_data",
+      "label": "reset_data()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L248"
+    },
+    {
+      "id": "main_plivo_status",
+      "label": "plivo_status()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L257"
+    },
+    {
+      "id": "main_plivo_credentials",
+      "label": "plivo_credentials()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L261"
+    },
+    {
+      "id": "main_plivo_answer",
+      "label": "plivo_answer()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L273"
+    },
+    {
+      "id": "main_plivo_recording",
+      "label": "plivo_recording()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L287"
+    },
+    {
+      "id": "main_root",
+      "label": "root()",
+      "file_type": "code",
+      "source_file": "main.py",
+      "source_location": "L297"
+    },
+    {
+      "id": "main_rationale_1",
+      "label": "MorioCRM \u2014 Echtzeit Backend FastAPI + WebSockets: alle Nutzer sehen \u00c4nderungen s",
+      "file_type": "rationale",
+      "source_file": "main.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "main_rationale_63",
+      "label": "Non-blocking debounced save \u2014 writes in background thread, max once per second.",
+      "file_type": "rationale",
+      "source_file": "main.py",
+      "source_location": "L63"
+    },
+    {
+      "id": "main_rationale_274",
+      "label": "Called by Plivo when a browser call is placed \u2014 returns PlivoXML.",
+      "file_type": "rationale",
+      "source_file": "main.py",
+      "source_location": "L274"
+    }
+  ],
+  "edges": [
+    {
+      "source": "main_py",
+      "target": "json",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "asyncio",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "os",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "threading",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "pathlib",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "typing",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "fastapi",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "fastapi_middleware_cors",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "fastapi_staticfiles",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "fastapi_responses",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "pydantic",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "uuid",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "time",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_load_data",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L51",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_save_data",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_get_demo_data",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L76",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_connectionmanager",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L128",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_init",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L129",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_connect",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L132",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_disconnect",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L136",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_broadcast",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L139",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_send_to",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L151",
+      "weight": 1.0
+    },
+    {
+      "source": "main_connectionmanager",
+      "target": "main_connectionmanager_online_users",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L159",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_websocket_endpoint",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L167",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_health",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L235",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_get_all",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L244",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_reset_data",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L248",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_plivo_status",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L257",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_plivo_credentials",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L261",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_plivo_answer",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L273",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_plivo_recording",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L287",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "main_root",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L297",
+      "weight": 1.0
+    },
+    {
+      "source": "main_py",
+      "target": "uvicorn",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L302",
+      "weight": 1.0
+    },
+    {
+      "source": "main_load_data",
+      "target": "main_get_demo_data",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "main_websocket_endpoint",
+      "target": "main_connectionmanager_connect",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L168",
+      "weight": 1.0
+    },
+    {
+      "source": "main_websocket_endpoint",
+      "target": "main_connectionmanager_online_users",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L175",
+      "weight": 1.0
+    },
+    {
+      "source": "main_websocket_endpoint",
+      "target": "main_connectionmanager_broadcast",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L179",
+      "weight": 1.0
+    },
+    {
+      "source": "main_websocket_endpoint",
+      "target": "main_save_data",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L199",
+      "weight": 1.0
+    },
+    {
+      "source": "main_websocket_endpoint",
+      "target": "main_connectionmanager_disconnect",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L224",
+      "weight": 1.0
+    },
+    {
+      "source": "main_health",
+      "target": "main_connectionmanager_online_users",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L238",
+      "weight": 1.0
+    },
+    {
+      "source": "main_reset_data",
+      "target": "main_get_demo_data",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L250",
+      "weight": 1.0
+    },
+    {
+      "source": "main_reset_data",
+      "target": "main_save_data",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "main_rationale_1",
+      "target": "main_py",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "main_rationale_63",
+      "target": "main_save_data",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L63",
+      "weight": 1.0
+    },
+    {
+      "source": "main_rationale_274",
+      "target": "main_plivo_answer",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "main.py",
+      "source_location": "L274",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
