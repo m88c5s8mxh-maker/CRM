@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morio Solutions – ROI-Rechner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d0d14;
+    --card: #13131f;
+    --card2: #1a1a2e;
+    --border: #2a2a45;
+    --purple: #9b7fe8;
+    --purple-light: #c4b0ff;
+    --mint: #4ecdc4;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --input-bg: #1e1e32;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .header { text-align: center; margin-bottom: 40px; }
+  .logo { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .logo span { color: var(--purple-light); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--mint); border-radius: 999px; padding: 4px 14px; font-size: 11px; letter-spacing: 2px; color: var(--mint); margin-bottom: 20px; }
+  h1 { font-size: 32px; font-weight: 300; letter-spacing: 1px; line-height: 1.2; }
+  h1 span { color: var(--purple-light); font-weight: 600; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-top: 12px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+
+  .kunde-bar {
+    max-width: 780px;
+    margin: 0 auto 32px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .kunde-bar label { font-size: 11px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; white-space: nowrap; }
+  .kunde-bar input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    padding: 8px 14px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .kunde-bar input:focus { border-color: var(--purple); }
+
+  .main { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); margin-bottom: 22px; }
+
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-prefix { position: absolute; left: 14px; color: var(--purple); font-size: 14px; font-weight: 500; pointer-events: none; }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field select {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    padding: 12px 14px;
+    outline: none;
+    transition: border 0.2s;
+    appearance: none;
+  }
+  .field input[type="text"].with-prefix,
+  .field input[type="number"].with-prefix { padding-left: 32px; }
+  .field input:focus, .field select:focus { border-color: var(--purple); }
+  .field select { cursor: pointer; }
+
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+  .slider-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--purple);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(155,127,232,0.5);
+  }
+  .slider-val { min-width: 44px; text-align: right; font-size: 15px; font-weight: 600; color: var(--purple-light); }
+
+  .btn-calc {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #7c5ce0, #9b7fe8);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    box-shadow: 0 4px 24px rgba(124,92,224,0.4);
+  }
+  .btn-calc:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-calc:active { transform: translateY(0); }
+
+  #results { display: none; }
+  #results.visible { display: block; }
+
+  .result-hero {
+    background: linear-gradient(135deg, #1a1440, #13131f);
+    border: 1px solid var(--purple);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .result-hero .label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .result-hero .big-num { font-size: 52px; font-weight: 700; color: var(--mint); line-height: 1; }
+  .result-hero .sub { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  @media(max-width:600px) { .result-grid { grid-template-columns: 1fr 1fr; } }
+
+  .result-box {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .result-box .r-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .result-box .r-num { font-size: 26px; font-weight: 700; color: var(--purple-light); line-height: 1; }
+  .result-box .r-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .result-box.highlight .r-num { color: var(--mint); }
+  .result-box.pkg .r-num { font-size: 18px; color: var(--purple-light); }
+  .result-box.pkg .pkg-price { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .progress-section { margin-top: 20px; }
+  .progress-item { margin-bottom: 16px; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .progress-header span:last-child { font-weight: 600; }
+  .progress-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .bar-current { background: var(--muted); }
+  .bar-morio { background: linear-gradient(90deg, var(--purple), var(--mint)); }
+  .bar-potential { background: var(--purple); }
+
+  .cta-card { text-align: center; background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+  .cta-card h3 { font-size: 22px; font-weight: 300; margin-bottom: 10px; }
+  .cta-card h3 span { color: var(--purple-light); font-weight: 600; }
+  .cta-card p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
+  .btn-cta {
+    display: inline-block;
+    background: transparent;
+    border: 2px solid var(--purple);
+    border-radius: 999px;
+    padding: 14px 40px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 0 24px rgba(155,127,232,0.2);
+  }
+  .btn-cta:hover { background: rgba(155,127,232,0.15); box-shadow: 0 0 40px rgba(155,127,232,0.4); }
+  .cta-links { font-size: 12px; color: var(--muted); margin-top: 16px; }
+  .cta-links a { color: var(--muted); text-decoration: none; }
+
+  .print-btn {
+    display: block;
+    margin: 16px auto 0;
+    padding: 10px 28px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .print-btn:hover { border-color: var(--purple); color: var(--text); }
+
+  @media print {
+    body { background: white; color: black; padding: 20px; }
+    .btn-calc, .print-btn, .btn-cta { display: none; }
+    .card, .result-hero, .result-box, .cta-card, .kunde-bar { border: 1px solid #ccc; background: white; }
+    #results { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">MORIO <span>SOLUTIONS</span></div>
+  <div class="badge">◆ KOSTENLOSER ROI-RECHNER</div>
+  <h1>Was kostet Sie<br><span>fehlende Sichtbarkeit?</span></h1>
+  <p class="subtitle">Geben Sie Ihre aktuellen Zahlen ein – wir zeigen Ihnen wie viel Umsatz Sie durch eine professionelle Online-Präsenz gewinnen können.</p>
+</div>
+
+<div class="kunde-bar">
+  <label>Erstellt für:</label>
+  <input type="text" id="kundenname" placeholder="Kundenname / Firmenname eingeben…" />
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">Ihr Unternehmen</div>
+    <div class="field">
+      <label>Branche</label>
+      <select id="branche">
+        <option>Zahnarztpraxis</option>
+        <option>Arztpraxis / Heilpraktiker</option>
+        <option>Restaurant / Gastronomie</option>
+        <option>Handwerksbetrieb</option>
+        <option>Kosmetik / Beauty</option>
+        <option>Fitnessstudio / Trainer</option>
+        <option>Steuerberater / Rechtsanwalt</option>
+        <option>Immobilienmakler</option>
+        <option>Einzelhandel / Shop</option>
+        <option>Hotel / Pension</option>
+        <option>Andere</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Durchschnittlicher Umsatz pro Kunde (€)</label>
+      <div class="input-wrap">
+        <span class="input-prefix">€</span>
+        <input type="number" id="umsatz" class="with-prefix" value="300" min="1" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Aktuelle Anzahl Neukunden pro Monat</label>
+      <div class="input-wrap">
+        <span class="input-prefix">#</span>
+        <input type="number" id="neukunden" class="with-prefix" value="8" min="0" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Ihre Online-Präsenz Heute</div>
+    <div class="field">
+      <label>Aktuelle Google-Bewertungen (Anzahl)</label>
+      <div class="slider-row">
+        <input type="range" id="bewertungen" min="0" max="200" value="18" oninput="document.getElementById('bew-val').textContent=this.value" />
+        <span class="slider-val" id="bew-val">18</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Ihr Google-Bewertungs-Durchschnitt</label>
+      <div class="slider-row">
+        <input type="range" id="durchschnitt" min="1" max="5" step="0.1" value="3.8" oninput="document.getElementById('ds-val').textContent=parseFloat(this.value).toFixed(1)" />
+        <span class="slider-val" id="ds-val">3.8</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Haben Sie eine professionelle Website?</label>
+      <select id="website">
+        <option value="none">Nein / Keine Website</option>
+        <option value="basic">Ja, einfache/ältere Website</option>
+        <option value="pro">Ja, professionelle Website</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Sind Sie auf Social Media aktiv?</label>
+      <select id="social">
+        <option value="none">Nein</option>
+        <option value="low">Wenig (selten Posts)</option>
+        <option value="active">Ja, regelmäßig aktiv</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="berechnen()">ROI BERECHNEN</button>
+
+  <div id="results">
+
+    <div class="result-hero">
+      <div class="label">IHR JÄHRLICHES UMSATZPOTENZIAL DAS SIE AKTUELL VERLIEREN</div>
+      <div class="big-num" id="r-verlust">—</div>
+      <div class="sub">durch mangelnde Online-Sichtbarkeit</div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-box">
+        <div class="r-label">VERLORENE KUNDEN / MO</div>
+        <div class="r-num" id="r-verloren">—</div>
+        <div class="r-sub">durch schwache Online-Präsenz</div>
+      </div>
+      <div class="result-box highlight">
+        <div class="r-label">POTENZIAL MIT MORIO</div>
+        <div class="r-num" id="r-potenzial">—</div>
+        <div class="r-sub">Neukunden / Monat möglich</div>
+      </div>
+      <div class="result-box">
+        <div class="r-label">ROI MORIO-INVESTMENT</div>
+        <div class="r-num" id="r-roi">—</div>
+        <div class="r-sub">Return im ersten Jahr</div>
+      </div>
+      <div class="result-box">
+        <div class="r-label">BREAK-EVEN IN</div>
+        <div class="r-num" id="r-breakeven">—</div>
+        <div class="r-sub">Wochen nach Launch</div>
+      </div>
+      <div class="result-box highlight">
+        <div class="r-label">ZUSATZ-UMSATZ / JAHR</div>
+        <div class="r-num" id="r-zusatz">—</div>
+        <div class="r-sub">mit professioneller Präsenz</div>
+      </div>
+      <div class="result-box pkg">
+        <div class="r-label">EMPFOHLENES PAKET</div>
+        <div class="r-num" id="r-paket">—</div>
+        <div class="pkg-price" id="r-paket-preis">—</div>
+      </div>
+    </div>
+
+    <div class="card progress-section">
+      <div class="card-title">Sichtbarkeits-Analyse</div>
+      <div class="progress-item">
+        <div class="progress-header"><span>Online-Sichtbarkeit aktuell</span><span id="p-aktuell">—</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar bar-current" id="bar-aktuell" style="width:0%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header"><span>Sichtbarkeit mit Morio Solutions</span><span id="p-morio">95%</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar bar-morio" id="bar-morio" style="width:0%"></div></div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header"><span>Ausgeschöpftes Kundenpotenzial aktuell</span><span id="p-potenzial">—</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar bar-potential" id="bar-potenzial" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="cta-card">
+      <h3>Bereit Ihr <span>Wachstum freizuschalten?</span></h3>
+      <p>Basierend auf Ihren Zahlen sehen wir erhebliches ungenutztes Potenzial.<br>In einem kostenlosen 20-Minuten-Gespräch zeigen wir Ihnen genau wie wir es heben.</p>
+      <a class="btn-cta" href="mailto:info@morio-solutions.de?subject=Kostenloses Gespräch anfragen">KOSTENLOSES GESPRÄCH BUCHEN</a>
+      <div class="cta-links">info@morio-solutions.de · www.morio-solutions.de</div>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">🖨 Als PDF drucken / speichern</button>
+
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  return new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR', maximumFractionDigits:0}).format(n);
+}
+
+function berechnen() {
+  const umsatz      = parseFloat(document.getElementById('umsatz').value) || 300;
+  const neukunden   = parseFloat(document.getElementById('neukunden').value) || 8;
+  const bewertungen = parseFloat(document.getElementById('bewertungen').value) || 0;
+  const ds          = parseFloat(document.getElementById('durchschnitt').value) || 3.8;
+  const website     = document.getElementById('website').value;
+  const social      = document.getElementById('social').value;
+
+  let sichtbarkeit = 20;
+  if (website === 'none') sichtbarkeit += 0;
+  else if (website === 'basic') sichtbarkeit += 15;
+  else sichtbarkeit += 30;
+
+  if (bewertungen >= 100) sichtbarkeit += 20;
+  else if (bewertungen >= 50) sichtbarkeit += 15;
+  else if (bewertungen >= 30) sichtbarkeit += 10;
+  else if (bewertungen >= 15) sichtbarkeit += 5;
+
+  if (ds >= 4.5) sichtbarkeit += 15;
+  else if (ds >= 4.0) sichtbarkeit += 10;
+  else if (ds >= 3.5) sichtbarkeit += 5;
+
+  if (social === 'active') sichtbarkeit += 10;
+  else if (social === 'low') sichtbarkeit += 4;
+
+  sichtbarkeit = Math.min(sichtbarkeit, 85);
+
+  const morio_sichtbarkeit = 95;
+  const faktor = (morio_sichtbarkeit - sichtbarkeit) / morio_sichtbarkeit;
+  const verlorene_kunden = Math.round(neukunden * faktor * 0.7);
+  const potenzial_kunden = Math.round(neukunden * (morio_sichtbarkeit / sichtbarkeit) - neukunden);
+
+  const verlust_monat = verlorene_kunden * umsatz;
+  const verlust_jahr  = verlust_monat * 12;
+  const zusatz_jahr   = potenzial_kunden * umsatz * 12;
+
+  let paket, preis, investition;
+  if (umsatz * neukunden < 3000 || verlust_jahr < 15000) {
+    paket = 'Starter'; preis = 'Ab 3.500 €'; investition = 3500;
+  } else if (umsatz * neukunden < 8000 || verlust_jahr < 40000) {
+    paket = 'Professional'; preis = 'Ab 7.500 €'; investition = 7500;
+  } else {
+    paket = 'Premium'; preis = 'Ab 12.000 €'; investition = 12000;
+  }
+
+  const roi = zusatz_jahr > 0 ? (zusatz_jahr / investition).toFixed(1) : '—';
+  const breakeven = verlust_monat > 0 ? Math.ceil((investition / verlust_monat) * 4.33) : '—';
+  const nicht_ausgeschoepft = Math.round((1 - sichtbarkeit / 100) * 100);
+
+  document.getElementById('r-verlust').textContent    = fmt(verlust_jahr);
+  document.getElementById('r-verloren').textContent   = verlorene_kunden;
+  document.getElementById('r-potenzial').textContent  = '+' + potenzial_kunden;
+  document.getElementById('r-roi').textContent        = roi !== '—' ? roi + 'x' : '—';
+  document.getElementById('r-breakeven').textContent  = breakeven !== '—' ? breakeven : '—';
+  document.getElementById('r-zusatz').textContent     = fmt(zusatz_jahr);
+  document.getElementById('r-paket').textContent      = paket;
+  document.getElementById('r-paket-preis').textContent = preis;
+
+  document.getElementById('p-aktuell').textContent  = sichtbarkeit + '%';
+  document.getElementById('p-potenzial').textContent = nicht_ausgeschoepft + '%';
+
+  setTimeout(() => {
+    document.getElementById('bar-aktuell').style.width  = sichtbarkeit + '%';
+    document.getElementById('bar-morio').style.width    = '95%';
+    document.getElementById('bar-potenzial').style.width = nicht_ausgeschoepft + '%';
+  }, 100);
+
+  const results = document.getElementById('results');
+  results.classList.add('visible');
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>

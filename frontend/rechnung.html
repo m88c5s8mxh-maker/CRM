@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morio Solutions – Rechnung erstellen</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d0d14;
+    --card: #13131f;
+    --card2: #1a1a2e;
+    --border: #2a2a45;
+    --purple: #9b7fe8;
+    --purple-light: #c4b0ff;
+    --mint: #4ecdc4;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --input-bg: #1e1e32;
+    --danger: #e84855;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 40px 20px 80px;
+  }
+
+  .header { text-align: center; margin-bottom: 36px; }
+  .logo { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .logo span { color: var(--purple-light); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--mint); border-radius: 999px; padding: 4px 14px; font-size: 11px; letter-spacing: 2px; color: var(--mint); margin-bottom: 18px; }
+  h1 { font-size: 28px; font-weight: 300; }
+  h1 span { color: var(--purple-light); font-weight: 600; }
+
+  .editor-wrap { max-width: 860px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 20px; }
+  .card-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); margin-bottom: 20px; }
+
+  .row { display: grid; gap: 14px; }
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media(max-width:600px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .field input,
+  .field select,
+  .field textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border 0.2s;
+    resize: vertical;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus { border-color: var(--purple); }
+  .field select { cursor: pointer; appearance: none; }
+  .field input[type="date"] { color-scheme: dark; }
+
+  .leistungen-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .leistungen-table thead tr { border-bottom: 1px solid var(--border); }
+  .leistungen-table th { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; text-align: left; }
+  .leistungen-table th.right { text-align: right; }
+  .leistungen-table td { padding: 8px 6px; vertical-align: middle; }
+  .leistungen-table tbody tr { border-bottom: 1px solid rgba(42,42,69,0.5); }
+  .leistungen-table tbody tr:last-child { border-bottom: none; }
+
+  .td-input {
+    background: var(--input-bg);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    width: 100%;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .td-input:focus { border-color: var(--purple); background: #22224a; }
+  .td-gesamt {
+    text-align: right;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--purple-light);
+    min-width: 100px;
+    padding-right: 4px;
+  }
+  .td-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .td-del:hover { color: var(--danger); }
+
+  .btn-add-row {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .btn-add-row:hover { border-color: var(--purple); color: var(--purple-light); }
+
+  .totals { margin-top: 16px; }
+  .total-row { display: flex; justify-content: flex-end; gap: 40px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .total-row:last-child { border-bottom: none; }
+  .total-label { font-size: 13px; color: var(--muted); }
+  .total-val { font-size: 14px; font-weight: 500; min-width: 120px; text-align: right; }
+  .total-row.grand { background: linear-gradient(135deg, #1a1440, #13131f); border: 1px solid var(--purple); border-radius: 10px; padding: 14px 20px; margin-top: 8px; }
+  .total-row.grand .total-label { font-size: 13px; color: var(--text); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .total-row.grand .total-val { font-size: 18px; font-weight: 700; color: var(--mint); }
+
+  .zb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:600px) { .zb-grid { grid-template-columns: 1fr; } }
+  .zb-block h4 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--purple); margin-bottom: 12px; }
+
+  .action-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .btn-primary {
+    flex: 1;
+    min-width: 180px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #7c5ce0, #9b7fe8);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(124,92,224,0.35);
+    transition: opacity 0.2s;
+    font-family: inherit;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary {
+    flex: 1;
+    min-width: 180px;
+    padding: 14px 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--purple); color: var(--text); }
+
+  #preview { display: none; }
+
+  @media print {
+    .editor-wrap, .header, .action-bar { display: none !important; }
+    #preview { display: block !important; }
+    body { background: white; color: #111; padding: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  #preview {
+    position: fixed;
+    inset: 0;
+    background: #0d0d14;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 40px 20px 80px;
+  }
+  #preview.open { display: block; }
+  .preview-inner {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #13131f;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 50px 48px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .p-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+  .p-logo { font-size: 22px; letter-spacing: 3px; text-transform: uppercase; }
+  .p-logo span { color: var(--purple-light); }
+  .p-re-badge {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    text-align: right;
+  }
+  .p-re-badge .label { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .p-re-badge .val { font-size: 16px; font-weight: 600; color: var(--purple-light); }
+
+  .p-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .p-meta-item .label { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .p-meta-item .val { font-size: 13px; }
+
+  .p-adressen { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+  .p-adresse .title { font-size: 9px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; margin-bottom: 10px; }
+  .p-adresse p { font-size: 13px; line-height: 1.8; color: var(--text); }
+
+  .p-betreff { font-size: 14px; font-weight: 500; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border); color: var(--purple-light); }
+
+  .p-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  .p-table thead th { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .p-table thead th.right { text-align: right; }
+  .p-table tbody td { padding: 12px 12px; font-size: 13px; border-bottom: 1px solid rgba(42,42,69,0.4); vertical-align: top; }
+  .p-table tbody td.right { text-align: right; }
+  .p-table tbody td.inkl { color: var(--mint); font-size: 12px; }
+
+  .p-totals { margin-left: auto; width: 280px; }
+  .p-total-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(42,42,69,0.4); font-size: 13px; }
+  .p-total-row:last-of-type { border-bottom: none; }
+  .p-total-row .l { color: var(--muted); }
+  .p-grand {
+    margin-top: 10px;
+    background: linear-gradient(135deg, #1a1440, #13131f);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .p-grand .l { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .p-grand .v { font-size: 20px; font-weight: 700; color: var(--mint); }
+
+  .p-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .p-footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .p-footer-block .title { font-size: 9px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; margin-bottom: 8px; }
+  .p-footer-block p { font-size: 12px; color: var(--muted); line-height: 1.8; }
+  .p-danke { text-align: center; margin-top: 28px; font-size: 13px; color: var(--muted); }
+
+  .preview-actions {
+    max-width: 800px;
+    margin: 20px auto 0;
+    display: flex;
+    gap: 12px;
+  }
+  .close-preview {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .close-preview:hover { border-color: var(--purple); color: var(--text); }
+  .print-action {
+    flex: 2;
+    padding: 12px;
+    background: linear-gradient(135deg, #7c5ce0, #9b7fe8);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">MORIO <span>SOLUTIONS</span></div>
+  <div class="badge">◆ RECHNUNGSERSTELLER</div>
+  <h1>Rechnung <span>erstellen</span></h1>
+</div>
+
+<div class="editor-wrap">
+
+  <div class="card">
+    <div class="card-title">Rechnungsdaten</div>
+    <div class="row row-3">
+      <div class="field">
+        <label>Rechnungsnummer</label>
+        <input type="text" id="re-nr" value="RE-2025-001" />
+      </div>
+      <div class="field">
+        <label>Rechnungsdatum</label>
+        <input type="date" id="re-datum" />
+      </div>
+      <div class="field">
+        <label>Leistungszeitraum</label>
+        <input type="text" id="re-zeitraum" placeholder="z.B. April 2025" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Empfänger (Kunde)</div>
+    <div class="row row-2" style="margin-bottom:14px">
+      <div class="field">
+        <label>Firmenname</label>
+        <input type="text" id="k-firma" placeholder="Muster GmbH" />
+      </div>
+      <div class="field">
+        <label>Ansprechpartner</label>
+        <input type="text" id="k-kontakt" placeholder="Max Mustermann" />
+      </div>
+    </div>
+    <div class="row row-2" style="margin-bottom:14px">
+      <div class="field">
+        <label>Straße & Hausnummer</label>
+        <input type="text" id="k-strasse" placeholder="Musterstraße 12" />
+      </div>
+      <div class="field">
+        <label>PLZ & Ort</label>
+        <input type="text" id="k-ort" placeholder="89312 Musterstadt" />
+      </div>
+    </div>
+    <div class="row row-2">
+      <div class="field">
+        <label>E-Mail des Kunden</label>
+        <input type="text" id="k-email" placeholder="kunde@beispiel.de" />
+      </div>
+      <div class="field">
+        <label>USt-IdNr. (optional)</label>
+        <input type="text" id="k-ust" placeholder="DE 123 456 789" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Betreff</div>
+    <div class="field">
+      <input type="text" id="betreff" value="Professionelle Website – Professional – Kundenname" placeholder="Betreff der Rechnung" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Leistungspositionen</div>
+    <table class="leistungen-table">
+      <thead>
+        <tr>
+          <th style="width:45%">Beschreibung</th>
+          <th style="width:8%">Menge</th>
+          <th style="width:15%">Einzelpreis</th>
+          <th style="width:8%">Inkl.</th>
+          <th style="width:15%" class="right">Gesamt</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody id="leistungen-body"></tbody>
+    </table>
+    <button class="btn-add-row" onclick="addRow()">+ Position hinzufügen</button>
+    <div class="totals">
+      <div class="total-row">
+        <span class="total-label">Nettobetrag</span>
+        <span class="total-val" id="t-netto">0,00 €</span>
+      </div>
+      <div class="total-row">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="total-label">zzgl. MwSt.</span>
+          <select id="mwst-satz" onchange="updateTotals()" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:4px 8px;outline:none;">
+            <option value="0.19">19%</option>
+            <option value="0.07">7%</option>
+            <option value="0">0% (Kleinunternehmer)</option>
+          </select>
+        </div>
+        <span class="total-val" id="t-mwst">0,00 €</span>
+      </div>
+      <div class="total-row grand">
+        <span class="total-label">GESAMTBETRAG (inkl. MwSt.)</span>
+        <span class="total-val" id="t-gesamt">0,00 €</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Zahlungsbedingungen & Bankverbindung</div>
+    <div class="zb-grid">
+      <div class="zb-block">
+        <h4>Zahlungsbedingungen</h4>
+        <div class="field" style="margin-bottom:10px">
+          <label>Zahlungsziel (Tage)</label>
+          <input type="number" id="z-tage" value="14" />
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Anzahlung</label>
+          <select id="z-anzahlung">
+            <option value="Keine Anzahlung">Keine Anzahlung</option>
+            <option value="50% Anzahlung bei Auftragserteilung, 50% nach Fertigstellung" selected>50/50 (Standard)</option>
+            <option value="100% Vorkasse">100% Vorkasse</option>
+            <option value="30% Anzahlung, 70% nach Abnahme">30/70</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Verzugszinsen</label>
+          <input type="text" id="z-zinsen" value="5% p.a." />
+        </div>
+      </div>
+      <div class="zb-block">
+        <h4>Bankverbindung</h4>
+        <div class="field" style="margin-bottom:10px">
+          <label>Kontoinhaber</label>
+          <input type="text" id="b-inhaber" value="Morio Solutions GbR" />
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Bank</label>
+          <input type="text" id="b-bank" placeholder="Sparkasse / Volksbank / …" />
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>IBAN</label>
+          <input type="text" id="b-iban" placeholder="DE__ ____ ____ ____ ____ __" />
+        </div>
+        <div class="field">
+          <label>BIC</label>
+          <input type="text" id="b-bic" placeholder="SSKMDEMMXXX" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Freitext / Notiz (optional)</div>
+    <div class="field">
+      <textarea id="notiz" rows="3" placeholder="Individuelle Hinweise für den Kunden…">Vielen Dank für Ihr Vertrauen in Morio Solutions. Bei Fragen: info@morio-solutions.de</textarea>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-secondary" onclick="resetForm()">↺ Zurücksetzen</button>
+    <button class="btn-primary" onclick="showPreview()">VORSCHAU & PDF ERSTELLEN</button>
+  </div>
+
+</div>
+
+<!-- PREVIEW OVERLAY -->
+<div id="preview">
+  <div class="preview-actions">
+    <button class="close-preview" onclick="closePreview()">← Zurück bearbeiten</button>
+    <button class="print-action" onclick="window.print()">🖨 Als PDF speichern / drucken</button>
+  </div>
+  <div class="preview-inner" id="preview-content"></div>
+  <div class="preview-actions" style="margin-top:16px">
+    <button class="close-preview" onclick="closePreview()">← Zurück bearbeiten</button>
+    <button class="print-action" onclick="window.print()">🖨 Als PDF speichern / drucken</button>
+  </div>
+</div>
+
+<script>
+document.getElementById('re-datum').valueAsDate = new Date();
+
+const defaultRows = [
+  { desc: 'Professional Website – Design, Entwicklung, Mobile-Optimierung, SEO-Grundlage, SSL', menge: 1, preis: 6500, inkl: false },
+  { desc: 'Google Reviews Widget & automatische Integration', menge: 1, preis: 0, inkl: true },
+  { desc: 'Online-Terminbuchungssystem', menge: 1, preis: 0, inkl: true },
+  { desc: '3 Monate technischer Support & Wartung', menge: 1, preis: 0, inkl: true },
+  { desc: 'Review Workflow – automatisierter WhatsApp-Funnel', menge: 1, preis: 1500, inkl: false },
+];
+
+function fmt(n) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+}
+
+function addRow(desc='', menge=1, preis=0, inkl=false) {
+  const tbody = document.getElementById('leistungen-body');
+  const tr = document.createElement('tr');
+  const rowId = Date.now() + Math.random();
+  tr.dataset.id = rowId;
+  tr.innerHTML = `
+    <td><input class="td-input" type="text" placeholder="Leistungsbeschreibung…" value="${desc}" oninput="updateTotals()" /></td>
+    <td><input class="td-input" type="number" value="${menge}" min="0" style="width:60px;text-align:center" oninput="updateTotals()" /></td>
+    <td><input class="td-input" type="number" value="${preis}" min="0" step="0.01" style="width:110px;text-align:right" oninput="updateTotals()" /></td>
+    <td><input type="checkbox" ${inkl ? 'checked' : ''} title="Inklusive (kein Aufpreis)" onchange="updateTotals()" style="cursor:pointer;width:16px;height:16px;accent-color:var(--mint)" /></td>
+    <td class="td-gesamt" id="g-${rowId}">—</td>
+    <td><button class="td-del" onclick="removeRow('${rowId}')" title="Position löschen">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  updateTotals();
+}
+
+function removeRow(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (tr) { tr.remove(); updateTotals(); }
+}
+
+function updateTotals() {
+  const rows = document.querySelectorAll('#leistungen-body tr');
+  let netto = 0;
+  rows.forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const menge  = parseFloat(inputs[1].value) || 0;
+    const preis  = parseFloat(inputs[2].value) || 0;
+    const inkl   = inputs[3].checked;
+    const id     = tr.dataset.id;
+    const gesamt = inkl ? null : menge * preis;
+    if (!inkl) netto += gesamt;
+    document.getElementById(`g-${id}`).textContent = inkl ? '✓ inkl.' : fmt(gesamt || 0);
+  });
+  const mwstRate = parseFloat(document.getElementById('mwst-satz').value);
+  const mwst     = netto * mwstRate;
+  const gesamt   = netto + mwst;
+  document.getElementById('t-netto').textContent  = fmt(netto);
+  document.getElementById('t-mwst').textContent   = fmt(mwst);
+  document.getElementById('t-gesamt').textContent = fmt(gesamt);
+}
+
+defaultRows.forEach(r => addRow(r.desc, r.menge, r.preis, r.inkl));
+
+function resetForm() {
+  if (!confirm('Formular zurücksetzen?')) return;
+  ['k-firma','k-kontakt','k-strasse','k-ort','k-email','k-ust'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('betreff').value = 'Professionelle Website – Professional – Kundenname';
+  document.getElementById('leistungen-body').innerHTML = '';
+  defaultRows.forEach(r => addRow(r.desc, r.menge, r.preis, r.inkl));
+  updateTotals();
+}
+
+function showPreview() {
+  const reNr     = document.getElementById('re-nr').value;
+  const reDatum  = new Date(document.getElementById('re-datum').value);
+  const reDatumStr = reDatum.toLocaleDateString('de-DE', {day:'2-digit',month:'long',year:'numeric'});
+  const zeitraum = document.getElementById('re-zeitraum').value;
+  const kFirma   = document.getElementById('k-firma').value || 'Firmenname des Kunden';
+  const kKontakt = document.getElementById('k-kontakt').value;
+  const kStrasse = document.getElementById('k-strasse').value;
+  const kOrt     = document.getElementById('k-ort').value;
+  const kEmail   = document.getElementById('k-email').value;
+  const kUst     = document.getElementById('k-ust').value;
+  const betreff  = document.getElementById('betreff').value;
+  const notiz    = document.getElementById('notiz').value;
+  const zTage    = document.getElementById('z-tage').value;
+  const zAnzahl  = document.getElementById('z-anzahlung').value;
+  const zZinsen  = document.getElementById('z-zinsen').value;
+  const bInhaber = document.getElementById('b-inhaber').value;
+  const bBank    = document.getElementById('b-bank').value;
+  const bIban    = document.getElementById('b-iban').value;
+  const bBic     = document.getElementById('b-bic').value;
+  const netto    = document.getElementById('t-netto').textContent;
+  const mwst     = document.getElementById('t-mwst').textContent;
+  const gesamt   = document.getElementById('t-gesamt').textContent;
+  const mwstRate = document.getElementById('mwst-satz').options[document.getElementById('mwst-satz').selectedIndex].text;
+
+  let leistungenHTML = '';
+  document.querySelectorAll('#leistungen-body tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const desc  = inputs[0].value || '—';
+    const menge = inputs[1].value;
+    const preis = parseFloat(inputs[2].value) || 0;
+    const inkl  = inputs[3].checked;
+    leistungenHTML += `
+      <tr>
+        <td>${desc}</td>
+        <td>${menge}</td>
+        <td class="right">${inkl ? '' : fmt(preis)}</td>
+        <td class="${inkl ? 'inkl' : ''} right">${inkl ? 'inklusive' : fmt(menge * preis)}</td>
+      </tr>`;
+  });
+
+  document.getElementById('preview-content').innerHTML = `
+    <div class="p-header">
+      <div class="p-logo">MORIO <span>SOLUTIONS</span></div>
+      <div class="p-re-badge">
+        <div class="label">Rechnung</div>
+        <div class="val">${reNr}</div>
+      </div>
+    </div>
+    <div class="p-meta">
+      <div class="p-meta-item"><div class="label">Datum</div><div class="val">${reDatumStr}</div></div>
+      <div class="p-meta-item"><div class="label">Leistungszeitraum</div><div class="val">${zeitraum || '—'}</div></div>
+      <div class="p-meta-item"><div class="label">Verwendungszweck</div><div class="val">${reNr}</div></div>
+    </div>
+    <div class="p-adressen">
+      <div class="p-adresse">
+        <div class="title">Von</div>
+        <p>Morio Solutions GbR<br>Kevin Becker & Marc Nürnberger<br>Rußbaumweg 12, 89312 Günzburg<br>info@morio-solutions.de<br>www.morio-solutions.de<br>Steuernummer: beantragt</p>
+      </div>
+      <div class="p-adresse">
+        <div class="title">An</div>
+        <p>${kFirma}${kKontakt?'<br>'+kKontakt:''}${kStrasse?'<br>'+kStrasse:''}${kOrt?'<br>'+kOrt:''}${kEmail?'<br>'+kEmail:''}${kUst?'<br>USt-IdNr.: '+kUst:''}</p>
+      </div>
+    </div>
+    <div class="p-betreff">Betreff: ${betreff}</div>
+    <table class="p-table">
+      <thead>
+        <tr>
+          <th style="width:46%">Leistungsbeschreibung</th>
+          <th style="width:8%">Menge</th>
+          <th class="right" style="width:18%">Einzelpreis</th>
+          <th class="right" style="width:18%">Gesamt</th>
+        </tr>
+      </thead>
+      <tbody>${leistungenHTML}</tbody>
+    </table>
+    <div class="p-totals">
+      <div class="p-total-row"><span class="l">Nettobetrag</span><span>${netto}</span></div>
+      <div class="p-total-row"><span class="l">zzgl. ${mwstRate} Umsatzsteuer</span><span>${mwst}</span></div>
+      <div class="p-grand"><span class="l">GESAMTBETRAG (inkl. MwSt.)</span><span class="v">${gesamt}</span></div>
+    </div>
+    <div class="p-footer">
+      <div class="p-footer-grid">
+        <div class="p-footer-block">
+          <div class="title">Zahlungsbedingungen</div>
+          <p>${zAnzahl}<br>Zahlungsziel: ${zTage} Tage netto<br>Verzugszinsen: ${zZinsen}</p>
+        </div>
+        <div class="p-footer-block">
+          <div class="title">Bankverbindung</div>
+          <p>Inhaber: ${bInhaber}<br>${bBank?'Bank: '+bBank+'<br>':''}${bIban?'IBAN: '+bIban+'<br>':''}${bBic?'BIC: '+bBic+'<br>':''}Verwendungszweck: ${reNr}</p>
+        </div>
+      </div>
+      ${notiz ? `<div class="p-danke">${notiz}</div>` : ''}
+    </div>`;
+
+  document.getElementById('preview').classList.add('open');
+  window.scrollTo(0, 0);
+}
+
+function closePreview() {
+  document.getElementById('preview').classList.remove('open');
+}
+</script>
+</body>
+</html>
