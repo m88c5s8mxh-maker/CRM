@@ -3,461 +3,880 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Morio Solutions – ROI-Rechner</title>
+<title>ROI-Calculator | Morio Solutions</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0012;--bg2:#0F0020;--card:#120028;--card2:#1A003A;
+  --pd:#3D0066;--pm:#6B21A8;--pl:#A855F7;--pb:#C084FC;--pf:#E9D5FF;
+  --gold:#F59E0B;--glow:#FCD34D;
+  --red:#EF4444;--rb:#FF6B6B;
+  --green:#10B981;--gb:#34D399;
+  --t1:#F0EAFF;--t2:#C4B5D4;--t3:#7C6A8E;
+  --brd:#2D0050;--brd2:rgba(168,85,247,.2);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
 
-  :root {
-    --bg: #0d0d14;
-    --card: #13131f;
-    --card2: #1a1a2e;
-    --border: #2a2a45;
-    --purple: #9b7fe8;
-    --purple-light: #c4b0ff;
-    --mint: #4ecdc4;
-    --text: #e8e8f0;
-    --muted: #7a7a9a;
-    --input-bg: #1e1e32;
-  }
+/* ── BACKGROUND ──────────────────────────────── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%,rgba(61,0,102,.35) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 50% at 80% 80%,rgba(107,33,168,.2) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+.page-wrap{position:relative;z-index:1}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── HEADER ──────────────────────────────────── */
+header{
+  background:linear-gradient(180deg,rgba(15,0,32,.95) 0%,rgba(10,0,18,.7) 100%);
+  backdrop-filter:blur(12px);
+  padding:18px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--brd);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+.logo-mark{
+  width:46px;height:46px;border-radius:12px;
+  background:linear-gradient(135deg,var(--pd),var(--pl));
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:900;color:#fff;
+  box-shadow:0 0 24px rgba(168,85,247,.5);
+  flex-shrink:0;
+}
+.logo-name{font-size:20px;font-weight:800;
+  background:linear-gradient(90deg,var(--pb),var(--glow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.hdr-badge{
+  background:linear-gradient(135deg,rgba(61,0,102,.6),rgba(107,33,168,.4));
+  border:1px solid var(--brd2);padding:8px 20px;border-radius:100px;
+  font-size:12px;color:var(--pb);letter-spacing:1px;font-weight:600;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 40px 20px 80px;
-  }
+/* ── CONTAINER ───────────────────────────────── */
+.container{max-width:1380px;margin:0 auto;padding:40px 40px 60px}
 
-  .header { text-align: center; margin-bottom: 40px; }
-  .logo { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-  .logo span { color: var(--purple-light); }
-  .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--mint); border-radius: 999px; padding: 4px 14px; font-size: 11px; letter-spacing: 2px; color: var(--mint); margin-bottom: 20px; }
-  h1 { font-size: 32px; font-weight: 300; letter-spacing: 1px; line-height: 1.2; }
-  h1 span { color: var(--purple-light); font-weight: 600; }
-  .subtitle { color: var(--muted); font-size: 14px; margin-top: 12px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+/* ── HERO ────────────────────────────────────── */
+.hero{text-align:center;margin-bottom:48px}
+.hero h1{
+  font-size:clamp(26px,4vw,40px);font-weight:900;line-height:1.2;
+  background:linear-gradient(135deg,#fff 0%,var(--pb) 50%,var(--glow) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:10px;
+}
+.hero p{font-size:15px;color:var(--t2);max-width:560px;margin:0 auto}
 
-  .kunde-bar {
-    max-width: 780px;
-    margin: 0 auto 32px;
-    background: var(--card2);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .kunde-bar label { font-size: 11px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; white-space: nowrap; }
-  .kunde-bar input {
-    flex: 1;
-    min-width: 200px;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 15px;
-    font-family: inherit;
-    padding: 8px 14px;
-    outline: none;
-    transition: border 0.2s;
-  }
-  .kunde-bar input:focus { border-color: var(--purple); }
+/* ── GRID ────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
 
-  .main { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+/* ── CARD ────────────────────────────────────── */
+.card{
+  background:linear-gradient(145deg,var(--card) 0%,#1C003A 100%);
+  border:1px solid var(--brd);border-radius:22px;padding:28px;
+  position:relative;overflow:hidden;
+}
+.card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--pl) 50%,transparent 100%);
+  opacity:.6;
+}
 
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-  }
-  .card-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); margin-bottom: 22px; }
+/* ── CARD TITLE ──────────────────────────────── */
+.card-title{
+  display:flex;align-items:center;gap:12px;
+  font-size:16px;font-weight:700;color:var(--pb);
+  margin-bottom:26px;
+}
+.card-icon{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pd),var(--pm));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
 
-  .field { margin-bottom: 20px; }
-  .field:last-child { margin-bottom: 0; }
-  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-  .input-wrap { position: relative; display: flex; align-items: center; }
-  .input-prefix { position: absolute; left: 14px; color: var(--purple); font-size: 14px; font-weight: 500; pointer-events: none; }
-  .field input[type="text"],
-  .field input[type="number"],
-  .field select {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 15px;
-    font-family: inherit;
-    padding: 12px 14px;
-    outline: none;
-    transition: border 0.2s;
-    appearance: none;
-  }
-  .field input[type="text"].with-prefix,
-  .field input[type="number"].with-prefix { padding-left: 32px; }
-  .field input:focus, .field select:focus { border-color: var(--purple); }
-  .field select { cursor: pointer; }
+/* ── FORM ────────────────────────────────────── */
+.fg{margin-bottom:18px}
+.fg label{display:block;font-size:12px;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:7px;font-weight:600}
+select,input[type=number]{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid var(--brd);border-radius:11px;
+  padding:12px 16px;color:var(--t1);font-size:15px;
+  transition:.2s;outline:none;-webkit-appearance:none;appearance:none;
+}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237C6A8E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+select option{background:#1A002E;color:var(--t1)}
+select:focus,input[type=number]:focus{
+  border-color:var(--pl);background:rgba(168,85,247,.07);
+  box-shadow:0 0 0 3px rgba(168,85,247,.14);
+}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 
-  .slider-row { display: flex; align-items: center; gap: 14px; }
-  .slider-row input[type="range"] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    outline: none;
-  }
-  .slider-row input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px; height: 18px;
-    background: var(--purple);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 8px rgba(155,127,232,0.5);
-  }
-  .slider-val { min-width: 44px; text-align: right; font-size: 15px; font-weight: 600; color: var(--purple-light); }
+/* ── TOGGLE ──────────────────────────────────── */
+.tg-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.03);border:1px solid var(--brd);
+  border-radius:11px;padding:13px 16px;
+}
+.tg-text{font-size:13px;color:var(--t2);font-weight:500}
+.tg-right{display:flex;align-items:center;gap:10px}
+.tg-val{font-size:12px;font-weight:700;min-width:24px;text-align:right;letter-spacing:.3px}
+.tg-val.y{color:var(--gb)}
+.tg-val.n{color:var(--rb)}
+.sw{position:relative;width:50px;height:26px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw-slider{
+  position:absolute;cursor:pointer;inset:0;
+  background:rgba(255,255,255,.08);border:1px solid var(--brd);
+  border-radius:26px;transition:.3s;
+}
+.sw-slider::before{
+  content:'';position:absolute;
+  width:18px;height:18px;left:3px;bottom:3px;
+  background:var(--t3);border-radius:50%;transition:.3s;
+}
+.sw input:checked+.sw-slider{
+  background:linear-gradient(90deg,var(--pd),var(--pm));
+  border-color:var(--pl);box-shadow:0 0 14px rgba(168,85,247,.45);
+}
+.sw input:checked+.sw-slider::before{transform:translateX(24px);background:#fff}
 
-  .btn-calc {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, #7c5ce0, #9b7fe8);
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-    box-shadow: 0 4px 24px rgba(124,92,224,0.4);
-  }
-  .btn-calc:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-calc:active { transform: translateY(0); }
+/* ── RESULT ITEMS ────────────────────────────── */
+.ri{
+  border-radius:13px;padding:15px 18px;margin-bottom:12px;
+  border:1px solid var(--brd);background:rgba(255,255,255,.025);
+  position:relative;overflow:hidden;transition:.3s;
+}
+.ri::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.ri.loss{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.04)}
+.ri.loss::before{background:linear-gradient(180deg,var(--rb),transparent)}
+.ri.gain{border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.04)}
+.ri.gain::before{background:linear-gradient(180deg,var(--gb),transparent)}
+.ri.neu{border-color:rgba(168,85,247,.25);background:rgba(168,85,247,.04)}
+.ri.neu::before{background:linear-gradient(180deg,var(--pb),transparent)}
+.ri-lbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.ri-val{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.ri-val.red{color:var(--rb);text-shadow:0 0 18px rgba(239,68,68,.4)}
+.ri-val.grn{color:var(--gb);text-shadow:0 0 18px rgba(52,211,153,.4)}
+.ri-val.gld{color:var(--glow);text-shadow:0 0 18px rgba(252,211,77,.4)}
+.ri-val.pur{color:var(--pb);text-shadow:0 0 18px rgba(192,132,252,.4)}
+.ri-sub{font-size:11px;color:var(--t3);margin-top:3px}
+.ri-sep{border:none;border-top:1px solid var(--brd);margin:16px 0}
 
-  #results { display: none; }
-  #results.visible { display: block; }
+/* ── TAXAMETER ───────────────────────────────── */
+.tax-section{
+  background:linear-gradient(135deg,#180005 0%,#2A0010 40%,#180005 100%);
+  border:1px solid rgba(239,68,68,.35);border-radius:22px;
+  padding:32px 40px;margin-bottom:28px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.tax-section::after{
+  content:'';position:absolute;inset:0;border-radius:22px;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(239,68,68,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.tax-stripe{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--rb),#FF4444,var(--rb),transparent);
+  animation:stripePulse 2s ease-in-out infinite;
+}
+@keyframes stripePulse{0%,100%{opacity:.5}50%{opacity:1}}
+.tax-label{
+  font-size:11px;color:rgba(239,68,68,.75);letter-spacing:2.5px;
+  text-transform:uppercase;margin-bottom:16px;font-weight:700;
+}
+.tax-num{
+  font-size:clamp(40px,8vw,72px);font-weight:900;
+  color:var(--rb);font-variant-numeric:tabular-nums;
+  font-family:'Courier New',monospace;letter-spacing:-2px;
+  text-shadow:0 0 40px rgba(239,68,68,.65),0 0 80px rgba(239,68,68,.3);
+  animation:taxPulse 1.4s ease-in-out infinite alternate;
+  position:relative;z-index:1;
+}
+@keyframes taxPulse{
+  from{text-shadow:0 0 30px rgba(239,68,68,.5),0 0 60px rgba(239,68,68,.2)}
+  to{text-shadow:0 0 55px rgba(239,68,68,.85),0 0 110px rgba(239,68,68,.4)}
+}
+.tax-sub{font-size:13px;color:rgba(239,68,68,.55);margin-top:10px;position:relative;z-index:1}
+.tax-rate{
+  display:inline-block;margin-top:8px;
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);
+  border-radius:100px;padding:4px 16px;font-size:12px;color:rgba(239,68,68,.8);
+}
 
-  .result-hero {
-    background: linear-gradient(135deg, #1a1440, #13131f);
-    border: 1px solid var(--purple);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  .result-hero .label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-  .result-hero .big-num { font-size: 52px; font-weight: 700; color: var(--mint); line-height: 1; }
-  .result-hero .sub { color: var(--muted); font-size: 13px; margin-top: 8px; }
+/* ── PACKAGES ────────────────────────────────── */
+.sec-title{
+  font-size:20px;font-weight:800;color:var(--t1);
+  margin-bottom:22px;display:flex;align-items:center;gap:10px;
+}
+.pkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:18px}
+@media(max-width:800px){.pkg-grid{grid-template-columns:1fr}}
+.pkg{
+  background:var(--card);border:2px solid var(--brd);
+  border-radius:18px;padding:24px 22px;
+  position:relative;transition:.35s;opacity:.55;
+}
+.pkg.active{
+  border-color:var(--pl);
+  background:linear-gradient(145deg,#1A0038 0%,#2A0055 100%);
+  opacity:1;transform:translateY(-5px);
+  box-shadow:0 0 50px rgba(168,85,247,.25),0 24px 48px rgba(0,0,0,.5);
+}
+.pkg-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--pd),var(--pm));
+  border:1px solid var(--pl);
+  padding:4px 18px;border-radius:100px;
+  font-size:11px;font-weight:700;color:var(--pb);white-space:nowrap;
+}
+.pkg-name{font-size:17px;font-weight:800;color:var(--t1);margin-bottom:6px}
+.pkg-price{font-size:30px;font-weight:900;color:var(--glow);margin-bottom:14px;line-height:1}
+.pkg-price small{font-size:13px;color:var(--t3);font-weight:400}
+.pkg-features{list-style:none;font-size:13px;color:var(--t2)}
+.pkg-features li{padding:4px 0 4px 18px;position:relative}
+.pkg-features li::before{content:'✓';position:absolute;left:0;color:var(--pb);font-weight:700}
+.addon{
+  display:none;
+  background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.03));
+  border:1px solid rgba(245,158,11,.3);border-radius:14px;
+  padding:16px 22px;align-items:center;justify-content:space-between;gap:16px;
+}
+.addon.show{display:flex}
+.addon-title{font-size:14px;font-weight:700;color:var(--glow);margin-bottom:3px}
+.addon-sub{font-size:12px;color:var(--t2)}
+.addon-price{font-size:26px;font-weight:900;color:var(--glow);white-space:nowrap;flex-shrink:0}
 
-  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
-  @media(max-width:600px) { .result-grid { grid-template-columns: 1fr 1fr; } }
+/* ── CTA ─────────────────────────────────────── */
+.cta-wrap{text-align:center;padding:8px 0 48px}
+.cta-btn{
+  position:relative;display:inline-block;
+  background:linear-gradient(135deg,var(--pd),var(--pm),var(--pl));
+  color:#fff;border:none;padding:18px 56px;
+  border-radius:100px;font-size:17px;font-weight:800;
+  cursor:pointer;letter-spacing:.5px;
+  box-shadow:0 0 36px rgba(168,85,247,.45),0 12px 36px rgba(0,0,0,.5);
+  transition:.3s;overflow:hidden;
+}
+.cta-btn::before{
+  content:'';position:absolute;inset:-3px;border-radius:103px;
+  background:linear-gradient(90deg,var(--pl),var(--glow),var(--pb),var(--pl));
+  background-size:300%;z-index:-1;
+  animation:btnShimmer 3s linear infinite;
+}
+@keyframes btnShimmer{0%{background-position:0%}100%{background-position:300%}}
+.cta-btn:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(168,85,247,.6),0 20px 50px rgba(0,0,0,.6)}
+.cta-hint{font-size:12px;color:var(--t3);margin-top:12px}
 
-  .result-box {
-    background: var(--card2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 14px;
-    text-align: center;
-  }
-  .result-box .r-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-  .result-box .r-num { font-size: 26px; font-weight: 700; color: var(--purple-light); line-height: 1; }
-  .result-box .r-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .result-box.highlight .r-num { color: var(--mint); }
-  .result-box.pkg .r-num { font-size: 18px; color: var(--purple-light); }
-  .result-box.pkg .pkg-price { font-size: 12px; color: var(--muted); margin-top: 4px; }
+/* ── MODAL ───────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);
+  backdrop-filter:blur(10px);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:.3s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:linear-gradient(145deg,#0E001F 0%,#18002E 100%);
+  border:1px solid var(--pl);border-radius:24px;
+  padding:36px;max-width:720px;width:92%;
+  max-height:92vh;overflow-y:auto;
+  transform:scale(.9) translateY(20px);transition:.35s;
+  box-shadow:0 0 80px rgba(168,85,247,.35),0 40px 80px rgba(0,0,0,.7);
+}
+.overlay.open .modal{transform:scale(1) translateY(0)}
+.modal::-webkit-scrollbar{width:6px}
+.modal::-webkit-scrollbar-track{background:transparent}
+.modal::-webkit-scrollbar-thumb{background:var(--pm);border-radius:3px}
 
-  .progress-section { margin-top: 20px; }
-  .progress-item { margin-bottom: 16px; }
-  .progress-header { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  .progress-header span:last-child { font-weight: 600; }
-  .progress-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .progress-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
-  .bar-current { background: var(--muted); }
-  .bar-morio { background: linear-gradient(90deg, var(--purple), var(--mint)); }
-  .bar-potential { background: var(--purple); }
+.m-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+.m-title{font-size:22px;font-weight:900;
+  background:linear-gradient(90deg,#fff,var(--pb));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.m-date{font-size:12px;color:var(--t3);margin-top:4px}
+.m-close{
+  background:none;border:1px solid var(--brd);color:var(--t2);
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:.2s;flex-shrink:0;
+}
+.m-close:hover{border-color:var(--rb);color:var(--rb)}
 
-  .cta-card { text-align: center; background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
-  .cta-card h3 { font-size: 22px; font-weight: 300; margin-bottom: 10px; }
-  .cta-card h3 span { color: var(--purple-light); font-weight: 600; }
-  .cta-card p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
-  .btn-cta {
-    display: inline-block;
-    background: transparent;
-    border: 2px solid var(--purple);
-    border-radius: 999px;
-    padding: 14px 40px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text);
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-    box-shadow: 0 0 24px rgba(155,127,232,0.2);
-  }
-  .btn-cta:hover { background: rgba(155,127,232,0.15); box-shadow: 0 0 40px rgba(155,127,232,0.4); }
-  .cta-links { font-size: 12px; color: var(--muted); margin-top: 16px; }
-  .cta-links a { color: var(--muted); text-decoration: none; }
+.m-meta{
+  background:rgba(255,255,255,.04);border:1px solid var(--brd);
+  border-radius:12px;padding:14px 18px;margin-bottom:20px;
+  display:flex;flex-wrap:wrap;gap:16px;
+}
+.m-meta-item{font-size:13px;color:var(--t2)}
+.m-meta-item strong{color:var(--t1);font-weight:700}
 
-  .print-btn {
-    display: block;
-    margin: 16px auto 0;
-    padding: 10px 28px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: border-color 0.2s;
-  }
-  .print-btn:hover { border-color: var(--purple); color: var(--text); }
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:500px){.m-grid{grid-template-columns:1fr}}
+.m-item{background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:12px;padding:14px 16px}
+.m-item-lbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.m-item-val{font-size:20px;font-weight:800}
 
-  @media print {
-    body { background: white; color: black; padding: 20px; }
-    .btn-calc, .print-btn, .btn-cta { display: none; }
-    .card, .result-hero, .result-box, .cta-card, .kunde-bar { border: 1px solid #ccc; background: white; }
-    #results { display: block !important; }
-  }
+.m-amort{
+  background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(61,0,102,.2));
+  border:1px solid rgba(168,85,247,.35);border-radius:14px;
+  padding:18px 22px;text-align:center;margin-bottom:22px;
+}
+.m-amort-lbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.m-amort-val{font-size:38px;font-weight:900;color:var(--pb)}
+
+.m-footer{
+  background:linear-gradient(135deg,rgba(61,0,102,.2),rgba(107,33,168,.15));
+  border:1px solid var(--brd2);border-radius:12px;
+  padding:14px 18px;margin-bottom:22px;text-align:center;font-size:13px;color:var(--t2)
+}
+.m-actions{display:flex;gap:12px;justify-content:flex-end}
+.btn-sec{
+  background:rgba(255,255,255,.05);border:1px solid var(--brd);
+  color:var(--t2);padding:11px 22px;border-radius:10px;cursor:pointer;
+  font-size:13px;font-weight:600;transition:.2s;
+}
+.btn-sec:hover{border-color:var(--pl);color:var(--pb)}
+.btn-pri{
+  background:linear-gradient(135deg,var(--pd),var(--pm));
+  border:1px solid var(--pl);color:#fff;
+  padding:11px 26px;border-radius:10px;cursor:pointer;
+  font-size:13px;font-weight:700;transition:.2s;
+}
+.btn-pri:hover{background:linear-gradient(135deg,var(--pm),var(--pl));box-shadow:0 0 22px rgba(168,85,247,.4)}
+
+/* ── VALUE FLASH ─────────────────────────────── */
+.flash{animation:flashAnim .45s ease-out}
+@keyframes flashAnim{0%{transform:scale(1.08);opacity:.7}100%{transform:scale(1);opacity:1}}
+
+/* ── PRINT ───────────────────────────────────── */
+@media print{
+  body{background:#fff;color:#000}
+  body::before,header,.tax-section,.pkg-grid,.addon,.cta-wrap{display:none!important}
+  .overlay{position:static;opacity:1;pointer-events:all;background:none;backdrop-filter:none;display:block}
+  .modal{box-shadow:none;border:1px solid #ccc;max-height:none;transform:none;margin:0;background:#fff;color:#000}
+  .m-title,.m-meta-item strong,.m-item-val{color:#000!important;-webkit-text-fill-color:#000!important}
+  .m-item{border:1px solid #ddd;background:#f9f9f9}
+  .m-amort{background:#f3f0ff;border:1px solid #ccc}
+  .m-amort-val,.m-close,.m-actions{display:none}
+  .container{display:none}
+}
 </style>
 </head>
 <body>
+<div class="page-wrap">
 
-<div class="header">
-  <div class="logo">MORIO <span>SOLUTIONS</span></div>
-  <div class="badge">◆ KOSTENLOSER ROI-RECHNER</div>
-  <h1>Was kostet Sie<br><span>fehlende Sichtbarkeit?</span></h1>
-  <p class="subtitle">Geben Sie Ihre aktuellen Zahlen ein – wir zeigen Ihnen wie viel Umsatz Sie durch eine professionelle Online-Präsenz gewinnen können.</p>
-</div>
-
-<div class="kunde-bar">
-  <label>Erstellt für:</label>
-  <input type="text" id="kundenname" placeholder="Kundenname / Firmenname eingeben…" />
-</div>
-
-<div class="main">
-
-  <div class="card">
-    <div class="card-title">Ihr Unternehmen</div>
-    <div class="field">
-      <label>Branche</label>
-      <select id="branche">
-        <option>Zahnarztpraxis</option>
-        <option>Arztpraxis / Heilpraktiker</option>
-        <option>Restaurant / Gastronomie</option>
-        <option>Handwerksbetrieb</option>
-        <option>Kosmetik / Beauty</option>
-        <option>Fitnessstudio / Trainer</option>
-        <option>Steuerberater / Rechtsanwalt</option>
-        <option>Immobilienmakler</option>
-        <option>Einzelhandel / Shop</option>
-        <option>Hotel / Pension</option>
-        <option>Andere</option>
-      </select>
+<!-- ── HEADER ── -->
+<header>
+  <a href="#" class="logo">
+    <div class="logo-mark">M</div>
+    <div>
+      <div class="logo-name">Morio Solutions</div>
+      <div class="logo-sub">Digital Agency</div>
     </div>
-    <div class="field">
-      <label>Durchschnittlicher Umsatz pro Kunde (€)</label>
-      <div class="input-wrap">
-        <span class="input-prefix">€</span>
-        <input type="number" id="umsatz" class="with-prefix" value="300" min="1" />
+  </a>
+  <div class="hdr-badge">ROI-ANALYSE · LIVE</div>
+</header>
+
+<!-- ── MAIN ── -->
+<div class="container">
+
+  <div class="hero">
+    <h1>Entdecken Sie Ihr ungenutztes Umsatzpotenzial</h1>
+    <p>Erfahren Sie in 30 Sekunden, wie viel Ihr Betrieb durch fehlende digitale Präsenz täglich verliert – und was möglich wäre.</p>
+  </div>
+
+  <div class="grid2">
+
+    <!-- ── LEFT: INPUTS ── -->
+    <div class="card">
+      <div class="card-title">
+        <div class="card-icon">🏢</div>
+        Ihr Betrieb – Daten eingeben
+      </div>
+
+      <div class="fg">
+        <label>Branche</label>
+        <select id="sel-branche" onchange="calc()">
+          <option value="">— Branche auswählen —</option>
+          <option value="zahnarzt">🦷 Zahnarzt</option>
+          <option value="physio">🏃 Physiotherapeut</option>
+          <option value="fitness">💪 Fitnessstudio</option>
+          <option value="immobilien">🏠 Immobilienmakler</option>
+          <option value="handwerk">🔧 Handwerk</option>
+          <option value="restaurant">🍽️ Restaurant</option>
+          <option value="kosmetik">💅 Kosmetik</option>
+          <option value="anwalt">⚖️ Anwalt</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label>Aktuelle Neukunden pro Monat</label>
+        <input type="number" id="inp-kunden" placeholder="z. B. 20" min="0" oninput="calc()">
+      </div>
+
+      <div class="fg">
+        <label>Durchschnittlicher Umsatz pro Kunde (€)</label>
+        <input type="number" id="inp-umsatz" placeholder="z. B. 500" min="0" oninput="calc()">
+      </div>
+
+      <div class="fg">
+        <label>Aktuelle Google-Bewertungen (Anzahl)</label>
+        <input type="number" id="inp-bew" placeholder="z. B. 45" min="0" oninput="calc()">
+      </div>
+
+      <div class="fg">
+        <div class="tg-row">
+          <span class="tg-text">Hat der Betrieb eine Website?</span>
+          <div class="tg-right">
+            <span class="tg-val n" id="lbl-website">Nein</span>
+            <label class="sw">
+              <input type="checkbox" id="tog-website" onchange="togChange('website')">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <div class="tg-row">
+          <span class="tg-text">Hat der Betrieb einen Review-Workflow?</span>
+          <div class="tg-right">
+            <span class="tg-val n" id="lbl-review">Nein</span>
+            <label class="sw">
+              <input type="checkbox" id="tog-review" onchange="togChange('review')">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="field">
-      <label>Aktuelle Anzahl Neukunden pro Monat</label>
-      <div class="input-wrap">
-        <span class="input-prefix">#</span>
-        <input type="number" id="neukunden" class="with-prefix" value="8" min="0" />
+
+    <!-- ── RIGHT: RESULTS ── -->
+    <div class="card">
+      <div class="card-title">
+        <div class="card-icon">📊</div>
+        Ihre Analyse – Live-Ergebnisse
+      </div>
+
+      <div class="ri loss">
+        <div class="ri-lbl">⚠ Verlorene Neukunden / Monat</div>
+        <div class="ri-val red" id="r-vk">–</div>
+        <div class="ri-sub">Potenzielle Kunden, die zu Mitbewerbern gehen</div>
+      </div>
+
+      <div class="ri loss">
+        <div class="ri-lbl">⚠ Monatlicher Umsatzverlust</div>
+        <div class="ri-val red" id="r-vm">–</div>
+        <div class="ri-sub">Entgangener Umsatz jeden Monat</div>
+      </div>
+
+      <div class="ri loss">
+        <div class="ri-lbl">⚠ Jährlicher Umsatzverlust gesamt</div>
+        <div class="ri-val red" id="r-vj">–</div>
+        <div class="ri-sub">Hochgerechnet auf 12 Monate</div>
+      </div>
+
+      <hr class="ri-sep">
+
+      <div class="ri gain">
+        <div class="ri-lbl">✦ Mit Morio: Neukunden / Monat</div>
+        <div class="ri-val grn" id="r-mk">–</div>
+        <div class="ri-sub">Prognostizierte Neukunden mit Morio Solutions</div>
+      </div>
+
+      <div class="ri gain">
+        <div class="ri-lbl">✦ Mit Morio: Mehrumsatz / Jahr</div>
+        <div class="ri-val grn" id="r-mu">–</div>
+        <div class="ri-sub">Prognostizierter Zusatzumsatz pro Jahr</div>
+      </div>
+
+      <div class="ri neu">
+        <div class="ri-lbl">★ ROI der Investition</div>
+        <div class="ri-val gld" id="r-roi">–</div>
+        <div class="ri-sub">So oft zahlt sich die Investition im ersten Jahr aus</div>
+      </div>
+
+      <div class="ri neu">
+        <div class="ri-lbl">⏱ Amortisation</div>
+        <div class="ri-val pur" id="r-amor">–</div>
+        <div class="ri-sub">Bis die Investition sich vollständig rentiert hat</div>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Ihre Online-Präsenz Heute</div>
-    <div class="field">
-      <label>Aktuelle Google-Bewertungen (Anzahl)</label>
-      <div class="slider-row">
-        <input type="range" id="bewertungen" min="0" max="200" value="18" oninput="document.getElementById('bew-val').textContent=this.value" />
-        <span class="slider-val" id="bew-val">18</span>
+  <!-- ── TAXAMETER ── -->
+  <div class="tax-section">
+    <div class="tax-stripe"></div>
+    <div class="tax-label">⚡ Live-Verlustmeter – Heutiger Umsatzverlust</div>
+    <div class="tax-num" id="tax-num">€ 0,00</div>
+    <div class="tax-sub" id="tax-sub">Geben Sie Ihre Daten ein, um den Live-Verlust zu sehen</div>
+    <div class="tax-rate" id="tax-rate" style="display:none"></div>
+  </div>
+
+  <!-- ── PACKAGES ── -->
+  <div class="packages-section">
+    <div class="sec-title">🎯 Empfohlenes Paket für Ihren Betrieb</div>
+
+    <div class="pkg-grid">
+
+      <div class="pkg" id="pkg-starter">
+        <div class="pkg-name">Starter</div>
+        <div class="pkg-price">2.800 € <small>einmalig</small></div>
+        <ul class="pkg-features">
+          <li>Professionelle Website</li>
+          <li>Google My Business Optimierung</li>
+          <li>SEO-Grundoptimierung</li>
+          <li>Social Media Einrichtung</li>
+          <li>Mobile-First Design</li>
+          <li>3 Monate Support</li>
+        </ul>
       </div>
-    </div>
-    <div class="field">
-      <label>Ihr Google-Bewertungs-Durchschnitt</label>
-      <div class="slider-row">
-        <input type="range" id="durchschnitt" min="1" max="5" step="0.1" value="3.8" oninput="document.getElementById('ds-val').textContent=parseFloat(this.value).toFixed(1)" />
-        <span class="slider-val" id="ds-val">3.8</span>
+
+      <div class="pkg" id="pkg-professional">
+        <div class="pkg-name">Professional</div>
+        <div class="pkg-price">5.500 € <small>einmalig</small></div>
+        <ul class="pkg-features">
+          <li>Alles aus Starter</li>
+          <li>Erweiterte SEO-Strategie</li>
+          <li>Google Ads Setup &amp; Kampagne</li>
+          <li>Conversion-Rate-Optimierung</li>
+          <li>Monatliches Performance-Reporting</li>
+          <li>6 Monate Support</li>
+        </ul>
       </div>
+
+      <div class="pkg" id="pkg-premium">
+        <div class="pkg-name">Premium 3D</div>
+        <div class="pkg-price">9.500 € <small>einmalig</small></div>
+        <ul class="pkg-features">
+          <li>Alles aus Professional</li>
+          <li>3D-Visualisierungen &amp; Animationen</li>
+          <li>Premium Brand Identity</li>
+          <li>Video-Content Produktion</li>
+          <li>Social Media Management (3 Mo.)</li>
+          <li>12 Monate Priority-Support</li>
+        </ul>
+      </div>
+
     </div>
-    <div class="field">
-      <label>Haben Sie eine professionelle Website?</label>
-      <select id="website">
-        <option value="none">Nein / Keine Website</option>
-        <option value="basic">Ja, einfache/ältere Website</option>
-        <option value="pro">Ja, professionelle Website</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Sind Sie auf Social Media aktiv?</label>
-      <select id="social">
-        <option value="none">Nein</option>
-        <option value="low">Wenig (selten Posts)</option>
-        <option value="active">Ja, regelmäßig aktiv</option>
-      </select>
+
+    <div class="addon" id="addon-review">
+      <div>
+        <div class="addon-title">+ Add-on empfohlen: Review Workflow</div>
+        <div class="addon-sub">Automatisiertes System für mehr &amp; bessere Google-Bewertungen – steigert Vertrauen und Sichtbarkeit nachhaltig</div>
+      </div>
+      <div class="addon-price">+ 2.500 €</div>
     </div>
   </div>
 
-  <button class="btn-calc" onclick="berechnen()">ROI BERECHNEN</button>
+  <!-- ── CTA ── -->
+  <div class="cta-wrap">
+    <button class="cta-btn" onclick="openModal()">🚀 Angebot jetzt sichern</button>
+    <div class="cta-hint">Kostenlose Erstberatung · Unverbindlich · Sofort verfügbar</div>
+  </div>
 
-  <div id="results">
+</div><!-- /container -->
+</div><!-- /page-wrap -->
 
-    <div class="result-hero">
-      <div class="label">IHR JÄHRLICHES UMSATZPOTENZIAL DAS SIE AKTUELL VERLIEREN</div>
-      <div class="big-num" id="r-verlust">—</div>
-      <div class="sub">durch mangelnde Online-Sichtbarkeit</div>
+<!-- ── MODAL ── -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal">
+
+    <div class="m-head">
+      <div>
+        <div class="m-title">Ihre persönliche ROI-Analyse</div>
+        <div class="m-date">Erstellt am <span id="m-date-val"></span> · Morio Solutions</div>
+      </div>
+      <button class="m-close" onclick="closeModal()">✕</button>
     </div>
 
-    <div class="result-grid">
-      <div class="result-box">
-        <div class="r-label">VERLORENE KUNDEN / MO</div>
-        <div class="r-num" id="r-verloren">—</div>
-        <div class="r-sub">durch schwache Online-Präsenz</div>
+    <div class="m-meta">
+      <span class="m-meta-item">Branche: <strong id="m-branche">–</strong></span>
+      <span class="m-meta-item">Neukunden: <strong id="m-nk">–</strong>/Monat</span>
+      <span class="m-meta-item">Ø Umsatz: <strong id="m-up">–</strong></span>
+      <span class="m-meta-item">Bewertungen: <strong id="m-bew">–</strong></span>
+    </div>
+
+    <div class="m-grid">
+      <div class="m-item">
+        <div class="m-item-lbl">Verlorene Kunden / Monat</div>
+        <div class="m-item-val" style="color:var(--rb)" id="m-vk">–</div>
       </div>
-      <div class="result-box highlight">
-        <div class="r-label">POTENZIAL MIT MORIO</div>
-        <div class="r-num" id="r-potenzial">—</div>
-        <div class="r-sub">Neukunden / Monat möglich</div>
+      <div class="m-item">
+        <div class="m-item-lbl">Monatlicher Umsatzverlust</div>
+        <div class="m-item-val" style="color:var(--rb)" id="m-vm">–</div>
       </div>
-      <div class="result-box">
-        <div class="r-label">ROI MORIO-INVESTMENT</div>
-        <div class="r-num" id="r-roi">—</div>
-        <div class="r-sub">Return im ersten Jahr</div>
+      <div class="m-item">
+        <div class="m-item-lbl">Jährlicher Umsatzverlust</div>
+        <div class="m-item-val" style="color:var(--rb)" id="m-vj">–</div>
       </div>
-      <div class="result-box">
-        <div class="r-label">BREAK-EVEN IN</div>
-        <div class="r-num" id="r-breakeven">—</div>
-        <div class="r-sub">Wochen nach Launch</div>
+      <div class="m-item">
+        <div class="m-item-lbl">Mit Morio: Neukunden / Monat</div>
+        <div class="m-item-val" style="color:var(--gb)" id="m-mk">–</div>
       </div>
-      <div class="result-box highlight">
-        <div class="r-label">ZUSATZ-UMSATZ / JAHR</div>
-        <div class="r-num" id="r-zusatz">—</div>
-        <div class="r-sub">mit professioneller Präsenz</div>
+      <div class="m-item">
+        <div class="m-item-lbl">Progn. Mehrumsatz / Jahr</div>
+        <div class="m-item-val" style="color:var(--gb)" id="m-mu">–</div>
       </div>
-      <div class="result-box pkg">
-        <div class="r-label">EMPFOHLENES PAKET</div>
-        <div class="r-num" id="r-paket">—</div>
-        <div class="pkg-price" id="r-paket-preis">—</div>
+      <div class="m-item">
+        <div class="m-item-lbl">ROI der Investition</div>
+        <div class="m-item-val" style="color:var(--glow)" id="m-roi">–</div>
+      </div>
+      <div class="m-item" style="grid-column:1/-1">
+        <div class="m-item-lbl">Empfohlenes Paket</div>
+        <div class="m-item-val" style="color:var(--pb);font-size:17px" id="m-paket">–</div>
       </div>
     </div>
 
-    <div class="card progress-section">
-      <div class="card-title">Sichtbarkeits-Analyse</div>
-      <div class="progress-item">
-        <div class="progress-header"><span>Online-Sichtbarkeit aktuell</span><span id="p-aktuell">—</span></div>
-        <div class="progress-bar-bg"><div class="progress-bar bar-current" id="bar-aktuell" style="width:0%"></div></div>
-      </div>
-      <div class="progress-item">
-        <div class="progress-header"><span>Sichtbarkeit mit Morio Solutions</span><span id="p-morio">95%</span></div>
-        <div class="progress-bar-bg"><div class="progress-bar bar-morio" id="bar-morio" style="width:0%"></div></div>
-      </div>
-      <div class="progress-item">
-        <div class="progress-header"><span>Ausgeschöpftes Kundenpotenzial aktuell</span><span id="p-potenzial">—</span></div>
-        <div class="progress-bar-bg"><div class="progress-bar bar-potential" id="bar-potenzial" style="width:0%"></div></div>
-      </div>
+    <div class="m-amort">
+      <div class="m-amort-lbl">Amortisation in</div>
+      <div class="m-amort-val" id="m-amor">–</div>
     </div>
 
-    <div class="cta-card">
-      <h3>Bereit Ihr <span>Wachstum freizuschalten?</span></h3>
-      <p>Basierend auf Ihren Zahlen sehen wir erhebliches ungenutztes Potenzial.<br>In einem kostenlosen 20-Minuten-Gespräch zeigen wir Ihnen genau wie wir es heben.</p>
-      <a class="btn-cta" href="mailto:info@morio-solutions.de?subject=Kostenloses Gespräch anfragen">KOSTENLOSES GESPRÄCH BUCHEN</a>
-      <div class="cta-links">info@morio-solutions.de · www.morio-solutions.de</div>
+    <div class="m-footer">
+      Dieses Angebot basiert auf Branchendurchschnittswerten und realen Vergleichsdaten.<br>
+      <strong style="color:var(--pb)">Morio Solutions</strong> · Ihr Partner für digitales Wachstum
     </div>
 
-    <button class="print-btn" onclick="window.print()">🖨 Als PDF drucken / speichern</button>
+    <div class="m-actions">
+      <button class="btn-sec" onclick="doPrint()">🖨️ Als PDF speichern</button>
+      <button class="btn-pri" onclick="closeModal()">Schließen</button>
+    </div>
 
   </div>
 </div>
 
 <script>
-function fmt(n) {
-  return new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR', maximumFractionDigits:0}).format(n);
+// ── STATE ──────────────────────────────────────────────────────────
+let taxInterval = null;
+let taxVal = 0;
+let taxRate = 0; // € per 100ms tick
+let snapshot = null;
+
+const BRANCH_NAMES = {
+  zahnarzt:'Zahnarzt', physio:'Physiotherapeut', fitness:'Fitnessstudio',
+  immobilien:'Immobilienmakler', handwerk:'Handwerk', restaurant:'Restaurant',
+  kosmetik:'Kosmetik', anwalt:'Anwalt'
+};
+
+// Industry multipliers (% new customers increase)
+const MULTI = {
+  zahnarzt:.52, physio:.42, fitness:.48, immobilien:.62,
+  handwerk:.35, restaurant:.30, kosmetik:.55, anwalt:.50
+};
+
+// ── NUMBER FORMATTING ──────────────────────────────────────────────
+function fEur(n, cents=false){
+  return n.toLocaleString('de-DE',{
+    style:'currency',currency:'EUR',
+    minimumFractionDigits:cents?2:0,
+    maximumFractionDigits:cents?2:0
+  });
+}
+function fNum(n,dec=1){
+  return n.toLocaleString('de-DE',{minimumFractionDigits:dec,maximumFractionDigits:dec});
 }
 
-function berechnen() {
-  const umsatz      = parseFloat(document.getElementById('umsatz').value) || 300;
-  const neukunden   = parseFloat(document.getElementById('neukunden').value) || 8;
-  const bewertungen = parseFloat(document.getElementById('bewertungen').value) || 0;
-  const ds          = parseFloat(document.getElementById('durchschnitt').value) || 3.8;
-  const website     = document.getElementById('website').value;
-  const social      = document.getElementById('social').value;
+// ── TOGGLE ─────────────────────────────────────────────────────────
+function togChange(id){
+  const el = document.getElementById('tog-'+id);
+  const lbl = document.getElementById('lbl-'+id);
+  if(el.checked){ lbl.textContent='Ja'; lbl.className='tg-val y'; }
+  else { lbl.textContent='Nein'; lbl.className='tg-val n'; }
+  calc();
+}
 
-  let sichtbarkeit = 20;
-  if (website === 'none') sichtbarkeit += 0;
-  else if (website === 'basic') sichtbarkeit += 15;
-  else sichtbarkeit += 30;
+// ── FLASH ANIMATION ────────────────────────────────────────────────
+function flash(id,val){
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
 
-  if (bewertungen >= 100) sichtbarkeit += 20;
-  else if (bewertungen >= 50) sichtbarkeit += 15;
-  else if (bewertungen >= 30) sichtbarkeit += 10;
-  else if (bewertungen >= 15) sichtbarkeit += 5;
+// ── MAIN CALCULATION ───────────────────────────────────────────────
+function calc(){
+  const branche  = document.getElementById('sel-branche').value;
+  const kunden   = parseFloat(document.getElementById('inp-kunden').value)||0;
+  const umsatz   = parseFloat(document.getElementById('inp-umsatz').value)||0;
+  const bew      = parseFloat(document.getElementById('inp-bew').value)||0;
+  const website  = document.getElementById('tog-website').checked;
+  const review   = document.getElementById('tog-review').checked;
 
-  if (ds >= 4.5) sichtbarkeit += 15;
-  else if (ds >= 4.0) sichtbarkeit += 10;
-  else if (ds >= 3.5) sichtbarkeit += 5;
+  if(!branche || kunden<=0 || umsatz<=0){ resetAll(); return; }
 
-  if (social === 'active') sichtbarkeit += 10;
-  else if (social === 'low') sichtbarkeit += 4;
+  // ── Loss factors ──
+  let lf = 0;
+  if(!website)  lf += 0.35;
+  if(!review)   lf += 0.20;
+  if(bew < 10)       lf += 0.30;
+  else if(bew < 25)  lf += 0.22;
+  else if(bew < 50)  lf += 0.15;
+  else if(bew < 100) lf += 0.07;
+  else               lf += 0.02;
+  lf = Math.min(lf, 0.82);
 
-  sichtbarkeit = Math.min(sichtbarkeit, 85);
+  const verlorenKunden  = kunden * lf;
+  const verlustMonat    = verlorenKunden * umsatz;
+  const verlustJahr     = verlustMonat * 12;
 
-  const morio_sichtbarkeit = 95;
-  const faktor = (morio_sichtbarkeit - sichtbarkeit) / morio_sichtbarkeit;
-  const verlorene_kunden = Math.round(neukunden * faktor * 0.7);
-  const potenzial_kunden = Math.round(neukunden * (morio_sichtbarkeit / sichtbarkeit) - neukunden);
+  // ── With Morio ──
+  const m = MULTI[branche]||0.40;
+  const neuKunden       = kunden * (1 + m);
+  const mehrMonat       = (neuKunden - kunden) * umsatz;
+  const mehrJahr        = mehrMonat * 12;
 
-  const verlust_monat = verlorene_kunden * umsatz;
-  const verlust_jahr  = verlust_monat * 12;
-  const zusatz_jahr   = potenzial_kunden * umsatz * 12;
+  // ── Package rec ──
+  let pkgId, pkgPreis;
+  if(mehrJahr < 24000)      { pkgId='starter';      pkgPreis=2800; }
+  else if(mehrJahr < 65000) { pkgId='professional'; pkgPreis=5500; }
+  else                      { pkgId='premium';      pkgPreis=9500; }
 
-  let paket, preis, investition;
-  if (umsatz * neukunden < 3000 || verlust_jahr < 15000) {
-    paket = 'Starter'; preis = 'Ab 3.500 €'; investition = 3500;
-  } else if (umsatz * neukunden < 8000 || verlust_jahr < 40000) {
-    paket = 'Professional'; preis = 'Ab 7.500 €'; investition = 7500;
-  } else {
-    paket = 'Premium'; preis = 'Ab 12.000 €'; investition = 12000;
+  const addOnPreis  = !review ? 2500 : 0;
+  const gesamtPreis = pkgPreis + addOnPreis;
+  const roi         = mehrJahr / gesamtPreis;
+  const amor        = mehrMonat > 0 ? gesamtPreis / mehrMonat : 0;
+
+  // ── Update results ──
+  flash('r-vk',   fNum(verlorenKunden,1)+' Kunden');
+  flash('r-vm',   fEur(verlustMonat));
+  flash('r-vj',   fEur(verlustJahr));
+  flash('r-mk',   fNum(neuKunden,1)+' Kunden');
+  flash('r-mu',   fEur(mehrJahr));
+  flash('r-roi',  fNum(roi,1)+'×');
+  flash('r-amor', fNum(amor,1)+' Monate');
+
+  // ── Package highlight ──
+  ['starter','professional','premium'].forEach(id=>{
+    const card = document.getElementById('pkg-'+id);
+    card.classList.remove('active');
+    const b = card.querySelector('.pkg-badge');
+    if(b) b.remove();
+  });
+  const rec = document.getElementById('pkg-'+pkgId);
+  rec.classList.add('active');
+  const badge = document.createElement('div');
+  badge.className='pkg-badge';
+  badge.textContent='⭐ Empfohlen für Sie';
+  rec.prepend(badge);
+
+  // ── Add-on ──
+  const ao = document.getElementById('addon-review');
+  ao.className = 'addon' + (!review?' show':'');
+
+  // ── Taxameter ──
+  const dailyLoss = verlustMonat / 30;
+  startTax(dailyLoss);
+
+  // ── Snapshot for modal ──
+  snapshot = {
+    branche: BRANCH_NAMES[branche]||branche,
+    kunden, umsatz, bew,
+    verlorenKunden, verlustMonat, verlustJahr,
+    neuKunden, mehrJahr, roi, amor,
+    pkgId, pkgPreis, addOnPreis, gesamtPreis,
+    hatReview: review
+  };
+}
+
+// ── RESET ──────────────────────────────────────────────────────────
+function resetAll(){
+  ['r-vk','r-vm','r-vj','r-mk','r-mu','r-roi','r-amor'].forEach(id=>{
+    document.getElementById(id).textContent='–';
+  });
+  stopTax();
+  taxVal=0;
+  document.getElementById('tax-num').textContent='€ 0,00';
+  document.getElementById('tax-sub').textContent='Geben Sie Ihre Daten ein, um den Live-Verlust zu sehen';
+  document.getElementById('tax-rate').style.display='none';
+  ['starter','professional','premium'].forEach(id=>{
+    const c=document.getElementById('pkg-'+id);
+    c.classList.remove('active');
+    const b=c.querySelector('.pkg-badge');
+    if(b)b.remove();
+  });
+  document.getElementById('addon-review').className='addon';
+  snapshot=null;
+}
+
+// ── TAXAMETER ──────────────────────────────────────────────────────
+function stopTax(){
+  if(taxInterval){ clearInterval(taxInterval); taxInterval=null; }
+}
+
+function startTax(dailyLoss){
+  stopTax();
+  if(dailyLoss<=0) return;
+  taxVal = 0;
+  taxRate = dailyLoss / 86400 * 0.1; // per 100ms
+
+  const rateEl = document.getElementById('tax-rate');
+  rateEl.style.display='inline-block';
+  rateEl.textContent = fEur(dailyLoss / 24, true) + ' / Stunde  ·  ' + fEur(dailyLoss,true) + ' / Tag';
+
+  document.getElementById('tax-sub').textContent =
+    'Während Sie hier sind, verliert Ihr Betrieb Umsatz. Jetzt handeln.';
+
+  taxInterval = setInterval(()=>{
+    taxVal += taxRate;
+    document.getElementById('tax-num').textContent =
+      '€ ' + taxVal.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  },100);
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────
+const PKG_NAMES = {
+  starter:'Starter – 2.800 €',
+  professional:'Professional – 5.500 €',
+  premium:'Premium 3D – 9.500 €'
+};
+
+function openModal(){
+  if(!snapshot){
+    alert('Bitte füllen Sie zunächst alle Pflichtfelder aus (Branche, Neukunden, Umsatz pro Kunde).');
+    return;
   }
+  const s = snapshot;
+  const today = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
 
-  const roi = zusatz_jahr > 0 ? (zusatz_jahr / investition).toFixed(1) : '—';
-  const breakeven = verlust_monat > 0 ? Math.ceil((investition / verlust_monat) * 4.33) : '—';
-  const nicht_ausgeschoepft = Math.round((1 - sichtbarkeit / 100) * 100);
+  document.getElementById('m-date-val').textContent = today;
+  document.getElementById('m-branche').textContent  = s.branche;
+  document.getElementById('m-nk').textContent        = s.kunden;
+  document.getElementById('m-up').textContent        = fEur(s.umsatz);
+  document.getElementById('m-bew').textContent       = s.bew;
 
-  document.getElementById('r-verlust').textContent    = fmt(verlust_jahr);
-  document.getElementById('r-verloren').textContent   = verlorene_kunden;
-  document.getElementById('r-potenzial').textContent  = '+' + potenzial_kunden;
-  document.getElementById('r-roi').textContent        = roi !== '—' ? roi + 'x' : '—';
-  document.getElementById('r-breakeven').textContent  = breakeven !== '—' ? breakeven : '—';
-  document.getElementById('r-zusatz').textContent     = fmt(zusatz_jahr);
-  document.getElementById('r-paket').textContent      = paket;
-  document.getElementById('r-paket-preis').textContent = preis;
+  document.getElementById('m-vk').textContent   = fNum(s.verlorenKunden,1)+' / Monat';
+  document.getElementById('m-vm').textContent   = fEur(s.verlustMonat);
+  document.getElementById('m-vj').textContent   = fEur(s.verlustJahr);
+  document.getElementById('m-mk').textContent   = fNum(s.neuKunden,1)+' / Monat';
+  document.getElementById('m-mu').textContent   = fEur(s.mehrJahr)+' / Jahr';
+  document.getElementById('m-roi').textContent  = fNum(s.roi,1)+'× ROI';
+  document.getElementById('m-amor').textContent = fNum(s.amor,1)+' Monate';
 
-  document.getElementById('p-aktuell').textContent  = sichtbarkeit + '%';
-  document.getElementById('p-potenzial').textContent = nicht_ausgeschoepft + '%';
+  let paketTxt = PKG_NAMES[s.pkgId];
+  if(!s.hatReview) paketTxt += ' + Review Workflow (+ 2.500 €)';
+  if(s.addOnPreis>0) paketTxt += ' = Gesamt: '+fEur(s.gesamtPreis);
+  document.getElementById('m-paket').textContent = paketTxt;
 
-  setTimeout(() => {
-    document.getElementById('bar-aktuell').style.width  = sichtbarkeit + '%';
-    document.getElementById('bar-morio').style.width    = '95%';
-    document.getElementById('bar-potenzial').style.width = nicht_ausgeschoepft + '%';
-  }, 100);
-
-  const results = document.getElementById('results');
-  results.classList.add('visible');
-  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('overlay').classList.add('open');
 }
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function overlayClick(e){
+  if(e.target===document.getElementById('overlay')) closeModal();
+}
+
+function doPrint(){
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>window.print(), 150);
+}
+
+// ── KEYBOARD ESC ───────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 </script>
 </body>
 </html>
