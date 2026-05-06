@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # ── DATENSPEICHER ─────────────────────────────────────────────────────────
-DATA_FILE = Path("crm_data.json")
+DATA_FILE = Path(os.environ.get("DATA_DIR", ".")) / "crm_data.json"
 
 def load_data() -> dict:
     if DATA_FILE.exists():

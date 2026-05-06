@@ -1,0 +1,3 @@
+crm.moriosolutions.de {
+    reverse_proxy crm:8000
+}

@@ -1,11 +1,17 @@
 crm_data.json
+.env
 __pycache__/
 *.pyc
 *.pyo
-.env
 .DS_Store
 *.egg-info/
 dist/
 build/
 .venv/
 venv/
+
+# graphify — temporäre Build-Dateien ignorieren, Graph committen
+graphify-out/.graphify_*.json
+graphify-out/.graphify_python
+graphify-out/.needs_update
+graphify-out/cache/
