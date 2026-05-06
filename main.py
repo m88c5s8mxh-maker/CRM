@@ -1,8 +1,7 @@
 """
 MorioCRM — Echtzeit Backend
 FastAPI + WebSockets: alle Nutzer sehen Änderungen sofort
-
-Start: uvicorn main:app --reload --port 8000
+Telefonie via Placetel (SIP/WebRTC mit JsSIP)
 """
 
 import json
@@ -19,24 +18,21 @@ from pydantic import BaseModel, Field
 import uuid
 import time
 
-# ── PLIVO ─────────────────────────────────────────────────────────────────
-PLIVO_AUTH_ID      = os.environ.get("PLIVO_AUTH_ID", "")
-PLIVO_AUTH_TOKEN   = os.environ.get("PLIVO_AUTH_TOKEN", "")
-PLIVO_PHONE_NUMBER = os.environ.get("PLIVO_PHONE_NUMBER", "")
+# ── PLACETEL ──────────────────────────────────────────────────────────────
+PLACETEL_SIP_DOMAIN = os.environ.get("PLACETEL_SIP_DOMAIN", "sip.placetel.de")
+PLACETEL_WSS        = os.environ.get("PLACETEL_WSS", "wss://sip.placetel.de/ws")
 
-# Ein Endpoint pro Nutzer — gleichzeitige Anrufe möglich
-PLIVO_ENDPOINTS = {
-    "Tyrone": {"username": os.environ.get("PLIVO_USER_TYRONE", ""), "password": os.environ.get("PLIVO_PASS_TYRONE", "")},
-    "Kevin":  {"username": os.environ.get("PLIVO_USER_KEVIN",  ""), "password": os.environ.get("PLIVO_PASS_KEVIN",  "")},
-    "Marc":   {"username": os.environ.get("PLIVO_USER_MARC",   ""), "password": os.environ.get("PLIVO_PASS_MARC",   "")},
-    "Timo":   {"username": os.environ.get("PLIVO_USER_TIMO",   ""), "password": os.environ.get("PLIVO_PASS_TIMO",   "")},
+# Ein SIP-Account pro Nutzer
+PLACETEL_USERS = {
+    "Tyrone": {"username": os.environ.get("PLACETEL_USER_TYRONE", ""), "password": os.environ.get("PLACETEL_PASS_TYRONE", "")},
+    "Kevin":  {"username": os.environ.get("PLACETEL_USER_KEVIN",  ""), "password": os.environ.get("PLACETEL_PASS_KEVIN",  "")},
+    "Marc":   {"username": os.environ.get("PLACETEL_USER_MARC",   ""), "password": os.environ.get("PLACETEL_PASS_MARC",   "")},
+    "Timo":   {"username": os.environ.get("PLACETEL_USER_TIMO",   ""), "password": os.environ.get("PLACETEL_PASS_TIMO",   "")},
 }
 
-PLIVO_CONFIGURED = bool(PLIVO_AUTH_ID and PLIVO_AUTH_TOKEN and any(
-    v["username"] for v in PLIVO_ENDPOINTS.values()
-))
+PLACETEL_CONFIGURED = bool(any(v["username"] for v in PLACETEL_USERS.values()))
 
-app = FastAPI(title="MorioCRM", version="1.0.0")
+app = FastAPI(title="MorioCRM", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,7 +56,6 @@ _save_lock = threading.Lock()
 _save_pending = False
 
 def save_data(data: dict):
-    """Non-blocking debounced save — writes in background thread, max once per second."""
     global _save_pending
     if _save_pending:
         return
@@ -89,45 +84,19 @@ def get_demo_data() -> dict:
             {"id": "d4", "company": "Beautystudio Lux", "contact": "Maria Lux", "value": 249, "phase": "kontakt", "prob": 50, "close": "2025-02-01", "notes": "Follow-up geplant"},
             {"id": "d5", "company": "Steuerbüro Fischer", "contact": "Michael Fischer", "value": 399, "phase": "gewonnen", "prob": 100, "close": "2024-11-30", "notes": "Abschluss! Onboarding läuft"},
         ],
-        "kamps": [
-            {"id": "kp1", "name": "Google Boost Q4", "kunde": "k1", "plattform": "Google", "status": "aktiv", "ziel": 60, "erreicht": 38, "methode": "E-Mail Sequenz", "start": "2024-10-01"},
-            {"id": "kp2", "name": "Handwerker Stars", "kunde": "k2", "plattform": "Google", "status": "aktiv", "ziel": 30, "erreicht": 21, "methode": "SMS-Kampagne", "start": "2024-09-15"},
-            {"id": "kp3", "name": "Jameda Aufbau", "kunde": "k3", "plattform": "Jameda", "status": "geplant", "ziel": 20, "erreicht": 0, "methode": "E-Mail Sequenz", "start": "2025-01-01"},
-            {"id": "kp4", "name": "Multi-Platform Auto", "kunde": "k4", "plattform": "Mehrere", "status": "aktiv", "ziel": 100, "erreicht": 67, "methode": "Kombination", "start": "2024-08-01"},
-            {"id": "kp5", "name": "Tripadvisor Comeback", "kunde": "k5", "plattform": "Tripadvisor", "status": "abgeschlossen", "ziel": 50, "erreicht": 50, "methode": "QR-Code", "start": "2024-06-01"},
-        ],
-        "tasks": [
-            {"id": "t1", "title": "Demo vorbereiten: Dr. Braun", "prio": "hoch", "due": "2025-01-10", "type": "Bericht", "kunde": "", "done": False, "user": "Tyrone"},
-            {"id": "t2", "title": "Follow-up: Bäckerei Hoffmann", "prio": "mittel", "due": "2025-01-08", "type": "E-Mail", "kunde": "", "done": False, "user": "Kevin"},
-            {"id": "t3", "title": "Monatsbericht: Trattoria", "prio": "hoch", "due": "2025-01-01", "type": "Bericht", "kunde": "k1", "done": False, "user": "Marc"},
-            {"id": "t4", "title": "Trial verlängern: Dr. Schmidt", "prio": "hoch", "due": "2025-01-05", "type": "Anruf", "kunde": "k3", "done": False, "user": "Tyrone"},
-            {"id": "t5", "title": "Onboarding Hotel Seehof", "prio": "niedrig", "due": "2025-01-20", "type": "Meeting", "kunde": "k5", "done": True, "user": "Kevin"},
-            {"id": "t6", "title": "Kampagnenbericht Q3", "prio": "mittel", "due": "2024-11-30", "type": "Bericht", "kunde": "", "done": True, "user": "Marc"},
-        ],
+        "kamps": [],
+        "tasks": [],
         "calls": [],
-        "contacts": [
-            {"id": "ct1", "name": "Marco Rossi", "firma": "Trattoria Bella Italia", "tel": "+49 89 123456", "email": "marco@bella.de", "tag": "kunde", "notizen": "Hauptansprechpartner", "createdBy": "Tyrone", "datum": "2024-03-15"},
-            {"id": "ct2", "name": "Hans Müller", "firma": "Sanitär Müller GmbH", "tel": "+49 711 654321", "email": "mueller@sanitaer.de", "tag": "kunde", "notizen": "", "createdBy": "Kevin", "datum": "2024-06-01"},
-            {"id": "ct3", "name": "Klaus Ziegler", "firma": "Auto Ziegler AG", "tel": "+49 221 111222", "email": "ziegler@auto.de", "tag": "kunde", "notizen": "3 Standorte", "createdBy": "Tyrone", "datum": "2024-01-20"},
-            {"id": "ct4", "name": "Dr. Braun", "firma": "Zahnarzt", "tel": "+49 30 555666", "email": "braun@zahnarzt.de", "tag": "lead", "notizen": "Demo diese Woche", "createdBy": "Marc", "datum": "2024-12-01"},
-            {"id": "ct5", "name": "Sandra Hoffmann", "firma": "Bäckerei Hoffmann", "tel": "+49 89 777888", "email": "sandra@baeckerei.de", "tag": "lead", "notizen": "Kaltakquise, interessiert", "createdBy": "Kevin", "datum": "2025-01-02"},
-        ],
-        "activities": [
-            {"ic": "🎯", "text": "<b>Steuerbüro Fischer</b> als Deal gewonnen!", "time": "vor 2 Std.", "user": "Tyrone", "bg": "rgba(45,122,79,.15)"},
-            {"ic": "⭐", "text": "Kampagne <b>Google Boost Q4</b>: 38 neue Bewertungen", "time": "vor 4 Std.", "user": "Kevin", "bg": "rgba(192,138,48,.12)"},
-            {"ic": "🏢", "text": "<b>Dr. med. Schmidt</b> als Trial-Kunde hinzugefügt", "time": "gestern", "user": "Marc", "bg": "rgba(192,57,43,.13)"},
-            {"ic": "✓", "text": "Aufgabe <b>Onboarding Hotel Seehof</b> erledigt", "time": "gestern", "user": "Kevin", "bg": "rgba(45,122,79,.12)"},
-            {"ic": "📄", "text": "Angebot an <b>Reifenservice Kern</b> gesendet", "time": "vor 2 Tagen", "user": "Tyrone", "bg": "rgba(30,28,22,1)"},
-        ]
+        "contacts": [],
+        "activities": []
     }
 
 DB = load_data()
 
-
 # ── WEBSOCKET MANAGER ─────────────────────────────────────────────────────
 class ConnectionManager:
     def __init__(self):
-        self.connections: Dict[str, WebSocket] = {}  # user -> websocket
+        self.connections: Dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, user: str):
         await websocket.accept()
@@ -161,84 +130,45 @@ class ConnectionManager:
 
 mgr = ConnectionManager()
 
-
 # ── WEBSOCKET ENDPOINT ────────────────────────────────────────────────────
 @app.websocket("/ws/{user}")
 async def websocket_endpoint(websocket: WebSocket, user: str):
     await mgr.connect(websocket, user)
-    print(f"[+] {user} verbunden ({len(mgr.connections)} online)")
-
-    # Schicke aktuellen State + wer online ist
-    await websocket.send_json({
-        "type": "init",
-        "data": DB,
-        "online": mgr.online_users()
-    })
-
-    # Broadcast: neuer Nutzer online
-    await mgr.broadcast({
-        "type": "user_joined",
-        "user": user,
-        "online": mgr.online_users()
-    }, exclude=user)
-
+    await websocket.send_json({"type": "init", "data": DB, "online": mgr.online_users()})
+    await mgr.broadcast({"type": "user_joined", "user": user, "online": mgr.online_users()}, exclude=user)
     try:
         while True:
             msg = await websocket.receive_json()
             msg_type = msg.get("type")
-
             if msg_type == "update":
-                # Client schickt komplette Daten-Änderung
-                action = msg.get("action", "update")
                 collection = msg.get("collection")
                 payload = msg.get("payload")
                 actor = msg.get("user", user)
-
                 if collection and payload is not None:
                     DB[collection] = payload
                     save_data(DB)
-
-                # Activity eintragen wenn übergeben
                 if msg.get("activity"):
                     act = msg["activity"]
                     act["time"] = "gerade eben"
                     DB["activities"].insert(0, act)
                     DB["activities"] = DB["activities"][:50]
                     save_data(DB)
-
-                # Broadcast nur die geänderte Collection (nicht das ganze DB)
                 await mgr.broadcast({
-                    "type": "update",
-                    "collection": collection,
-                    "payload": DB.get(collection),
-                    "activities": DB.get("activities"),
-                    "action": action,
-                    "user": actor,
+                    "type": "update", "collection": collection,
+                    "payload": DB.get(collection), "activities": DB.get("activities"),
+                    "action": msg.get("action", "update"), "user": actor,
                     "online": mgr.online_users()
                 }, exclude=user)
-
             elif msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
-
     except WebSocketDisconnect:
         mgr.disconnect(user)
-        print(f"[-] {user} getrennt ({len(mgr.connections)} online)")
-        await mgr.broadcast({
-            "type": "user_left",
-            "user": user,
-            "online": mgr.online_users()
-        })
+        await mgr.broadcast({"type": "user_left", "user": user, "online": mgr.online_users()})
 
-
-# ── REST API (Fallback / Tools) ───────────────────────────────────────────
+# ── REST API ──────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {
-        "status": "ok",
-        "online": mgr.online_users(),
-        "kunden": len(DB.get("kunden", [])),
-        "deals": len(DB.get("deals", [])),
-    }
+    return {"status": "ok", "online": mgr.online_users(), "kunden": len(DB.get("kunden", []))}
 
 @app.get("/api/data")
 def get_all():
@@ -251,42 +181,31 @@ def reset_data():
     save_data(DB)
     return {"ok": True}
 
+# ── PLACETEL ENDPOINTS ────────────────────────────────────────────────────
+@app.get("/api/phone-status")
+def phone_status():
+    return {
+        "configured": PLACETEL_CONFIGURED,
+        "provider": "placetel",
+        "wss": PLACETEL_WSS,
+        "sip_domain": PLACETEL_SIP_DOMAIN,
+    }
 
-# ── PLIVO ENDPOINTS ───────────────────────────────────────────────────────
-@app.get("/api/plivo-status")
-def plivo_status():
-    return {"configured": PLIVO_CONFIGURED}
-
-@app.get("/api/plivo-credentials")
-def plivo_credentials(user: str = ""):
-    if not PLIVO_CONFIGURED:
-        raise HTTPException(status_code=503, detail="Plivo nicht konfiguriert")
-    endpoint = PLIVO_ENDPOINTS.get(user)
-    if not endpoint or not endpoint["username"]:
-        # Fallback: first available endpoint
-        endpoint = next((v for v in PLIVO_ENDPOINTS.values() if v["username"]), None)
-    if not endpoint:
-        raise HTTPException(status_code=503, detail="Kein Endpoint für diesen Nutzer")
-    return {"username": endpoint["username"], "password": endpoint["password"]}
-
-@app.post("/api/plivo-answer")
-async def plivo_answer(request: Request):
-    """Called by Plivo when a browser call is placed — returns PlivoXML."""
-    form = await request.form()
-    to = form.get("To", "") or form.get("to", "")
-    caller_id = PLIVO_PHONE_NUMBER or form.get("From", "")
-    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial callerId="{caller_id}" record="true" recordingCallback="/api/plivo-recording">
-    <Number>{to}</Number>
-  </Dial>
-</Response>"""
-    return Response(content=xml, media_type="application/xml")
-
-@app.post("/api/plivo-recording")
-async def plivo_recording(request: Request):
-    # Plivo sends recording URL here after call ends
-    return Response(status_code=200)
+@app.get("/api/phone-credentials")
+def phone_credentials(user: str = ""):
+    if not PLACETEL_CONFIGURED:
+        raise HTTPException(status_code=503, detail="Placetel nicht konfiguriert — PLACETEL_USER_* Env-Variablen setzen")
+    cred = PLACETEL_USERS.get(user)
+    if not cred or not cred["username"]:
+        cred = next((v for v in PLACETEL_USERS.values() if v["username"]), None)
+    if not cred:
+        raise HTTPException(status_code=503, detail="Kein Placetel-Account für diesen Nutzer")
+    return {
+        "username": cred["username"],
+        "password": cred["password"],
+        "sip_domain": PLACETEL_SIP_DOMAIN,
+        "wss": PLACETEL_WSS,
+    }
 
 # ── FRONTEND ──────────────────────────────────────────────────────────────
 frontend_path = Path("frontend")
@@ -296,7 +215,6 @@ else:
     @app.get("/")
     def root():
         return HTMLResponse("<h1>MorioCRM — frontend/ Ordner fehlt</h1>")
-
 
 if __name__ == "__main__":
     import uvicorn
