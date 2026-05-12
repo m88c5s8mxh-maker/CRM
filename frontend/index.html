@@ -145,7 +145,7 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 .kcard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden;cursor:pointer;transition:all .18s}
 .kcard:hover{border-color:var(--rb);box-shadow:0 4px 20px rgba(124,92,224,.15);transform:translateY(-1px)}
 .khd{padding:12px 14px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:flex-start}
-.knm{font-size:13px;font-weight:700;color:var(--t1)}
+.kamp-nm{font-size:13px;font-weight:700;color:var(--t1)}
 .kcl{font-size:10px;color:var(--t3);margin-top:2px}
 .kbd{padding:11px 14px}
 .kst{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px;text-align:center}
@@ -243,6 +243,13 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
 .re-stab:hover{color:var(--t2);background:var(--s2)}
 .re-stab.on{color:var(--gold);background:var(--rd);border-color:var(--rb)}
 #v-rechnung iframe{width:100%;flex:1;border:none;min-height:0}
+
+/* ── DTMF PAD ── */
+.dtmf-wrap{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);z-index:151;display:none}
+.dtmf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:var(--s2);border:1px solid rgba(124,92,224,.4);border-radius:var(--r2);padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.dtmf-btn{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:9px 0;font-size:15px;font-weight:700;font-family:var(--fm);color:var(--t1);cursor:pointer;text-align:center;transition:all .1s;width:52px}
+.dtmf-btn:hover{background:var(--s4);border-color:var(--rb)}
+.dtmf-btn:active{background:var(--rd);color:var(--gold)}
 </style>
 </head>
 <body>
@@ -299,7 +306,8 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
         <button class="btn btn-r btn-sm" onclick="openK()">+ Neuer Kunde</button>
       </div>
     </div>
-    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi"><div class="kic">💰</div><div class="kl">Mein MRR</div><div class="kv" id="ki-mrr">—</div><div class="kd">monatlich</div></div>
       <div class="kpi"><div class="kic">🏢</div><div class="kl">Aktive Kunden</div><div class="kv" id="ki-k">—</div><div class="kd" id="ki-kd">gesamt</div></div>
       <div class="kpi"><div class="kic">📞</div><div class="kl">Anrufe gesamt</div><div class="kv" id="ki-r">—</div><div class="kd">aufgezeichnet</div></div>
       <div class="kpi"><div class="kic">✓</div><div class="kl">Offene Aufgaben</div><div class="kv" id="ki-s">—</div><div class="kd">zu erledigen</div></div>
@@ -508,9 +516,26 @@ button{font-family:var(--ff);cursor:pointer;transition:all .15s}
   </div>
   <span id="callTimer" style="font-family:var(--fm);font-size:14px;font-weight:700;color:#4caf82">00:00</span>
   <button id="muteBtn" onclick="toggleMute()" style="background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:5px 11px;color:var(--t2);font-size:11px;font-family:var(--ff);cursor:pointer">🎙 Ton</button>
+  <button onclick="toggleDtmf()" style="background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:5px 11px;color:var(--t2);font-size:11px;font-family:var(--ff);cursor:pointer">🔢 DTMF</button>
   <button onclick="stopCall()" style="background:var(--red);border:none;border-radius:var(--r);padding:5px 14px;color:#fff;font-size:11px;font-weight:700;font-family:var(--ff);cursor:pointer">📵 Auflegen</button>
 </div>
 
+<div class="dtmf-wrap" id="dtmfWrap">
+  <div class="dtmf-grid">
+    <button class="dtmf-btn" onclick="sendDtmf('1')">1</button>
+    <button class="dtmf-btn" onclick="sendDtmf('2')">2</button>
+    <button class="dtmf-btn" onclick="sendDtmf('3')">3</button>
+    <button class="dtmf-btn" onclick="sendDtmf('4')">4</button>
+    <button class="dtmf-btn" onclick="sendDtmf('5')">5</button>
+    <button class="dtmf-btn" onclick="sendDtmf('6')">6</button>
+    <button class="dtmf-btn" onclick="sendDtmf('7')">7</button>
+    <button class="dtmf-btn" onclick="sendDtmf('8')">8</button>
+    <button class="dtmf-btn" onclick="sendDtmf('9')">9</button>
+    <button class="dtmf-btn" onclick="sendDtmf('*')">*</button>
+    <button class="dtmf-btn" onclick="sendDtmf('0')">0</button>
+    <button class="dtmf-btn" onclick="sendDtmf('#')">#</button>
+  </div>
+</div>
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -519,7 +544,7 @@ let D={kunden:[],deals:[],kamps:[],tasks:[],activities:[],calls:[],contacts:[]};
 let curUser='', ws=null, wsRetries=0, wsPingInterval=null;
 let kFilter='all', kpFilter='all';
 const UC={Tyrone:'#c04a2b',Kevin:'#2b7a5a',Marc:'#5a2b7a',Timo:'#2b5a7a'};
-let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null};
+let callState={active:false,mediaRecorder:null,audioChunks:[],stream:null,kundeId:'',kundeName:'',startTime:null,timerInterval:null,notizen:''};
 const WS_URL=`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/`;
 
 // ── WEBSOCKET ─────────────────────────────────────────────────────────────
@@ -677,6 +702,8 @@ function rDash(){
   const myTasks  = curUser ? D.tasks.filter(t=>t.user===curUser)        : D.tasks;
 
   // KPIs — meine Zahlen
+  const myMRR=myKunden.filter(k=>k.status==='aktiv').reduce((s,k)=>s+(k.mrr||0),0);
+  document.getElementById('ki-mrr').textContent='€'+myMRR.toLocaleString('de');
   document.getElementById('ki-k').textContent=myKunden.filter(k=>k.status==='aktiv').length;
   document.getElementById('ki-r').textContent=myCalls.length;
   document.getElementById('ki-s').textContent=myTasks.filter(t=>!t.done).length;
@@ -874,7 +901,7 @@ function rKamp(){
     const kd=D.kunden.find(c=>c.id===k.kunde);
     const pct=k.ziel>0?Math.min(100,Math.round(k.erreicht/k.ziel*100)):0;
     return `<div class="kcard" onclick="openKp('${k.id}')">
-      <div class="khd"><div><div class="knm">${k.name}</div><div class="kcl">${kd?.name||'—'} · ${k.plattform}</div></div><span class="badge ${sm[k.status]}">${k.status}</span></div>
+      <div class="khd"><div><div class="kamp-nm">${k.name}</div><div class="kcl">${kd?.name||'—'} · ${k.plattform}</div></div><span class="badge ${sm[k.status]}">${k.status}</span></div>
       <div class="kbd">
         <div class="kst"><div><div class="ksv">${k.erreicht}</div><div class="ksl">Erreicht</div></div><div><div class="ksv">${k.ziel}</div><div class="ksl">Ziel</div></div><div><div class="ksv">${pct}%</div><div class="ksl">Progress</div></div></div>
         <div class="prog"><div class="pf" style="width:${pct}%"></div></div>
@@ -1193,12 +1220,13 @@ function importCSV(input){
     }
     if(!parsed.length){toast('Keine Kontakte gefunden','⚠️');return;}
     // Show preview
+    window._csvParsed = parsed;
     const prev=document.getElementById('ct-csv-preview');
     prev.style.display='block';
     prev.innerHTML=`<div class="card"><div class="ch"><span class="ct">CSV Vorschau — ${parsed.length} Kontakte</span>
       <div style="display:flex;gap:7px">
         <button class="btn btn-g btn-sm" onclick="document.getElementById('ct-csv-preview').style.display='none'">Abbrechen</button>
-        <button class="btn btn-r btn-sm" onclick="confirmCSV(${JSON.stringify(parsed).replace(/"/g,'&quot;')})">✓ Alle importieren</button>
+        <button class="btn btn-r btn-sm" onclick="confirmCSV()">✓ Alle importieren</button>
       </div></div>
       <div class="cb" style="max-height:220px;overflow-y:auto">
         ${parsed.slice(0,8).map(c=>`<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--b1);font-size:11px">
@@ -1214,7 +1242,9 @@ function importCSV(input){
   reader.readAsText(file);
 }
 
-function confirmCSV(contacts){
+function confirmCSV(){
+  const contacts=window._csvParsed||[];
+  if(!contacts.length){toast('Keine Daten zum Importieren','⚠️');return;}
   if(!D.contacts) D.contacts=[];
   D.contacts.unshift(...contacts);
   pushUpdate('contacts');
@@ -1404,21 +1434,22 @@ async function initPhone(){
       user_agent: 'MorioCRM/2.0',
     });
 
-    phoneUA.on('registered', ()=>{
-      phoneReady = true;
-      toast('Placetel bereit','📞');
-    });
-    phoneUA.on('registrationFailed', (e)=>{
-      toast('Placetel Login fehlgeschlagen: '+e.cause,'⚠️');
-      phoneReady = false;
-    });
     phoneUA.on('disconnected', ()=>{ phoneReady = false; });
 
     // Eingehende Anrufe
     phoneUA.on('newRTCSession', (e)=>{
       if(e.originator === 'remote'){
         const inSession = e.session;
-        toast('📞 Eingehender Anruf: '+(inSession.remote_identity?.display_name||inSession.remote_identity?.uri?.user||'Unbekannt'));
+        const callerName = inSession.remote_identity?.display_name || inSession.remote_identity?.uri?.user || 'Unbekannt';
+        toast('📞 Eingehender Anruf: '+callerName);
+        callState.kundeId = '';
+        callState.kundeName = callerName;
+        callState.notizen = '';
+        callState.active = true;
+        document.getElementById('callKundeName').textContent = callerName;
+        setCallStatus('Eingehend...');
+        document.getElementById('callTimer').textContent = '00:00';
+        document.getElementById('callBar').classList.add('on');
         inSession.answer({ mediaConstraints: { audio: true, video: false } });
         phoneSession = inSession;
         _attachSessionEvents(inSession);
@@ -1426,7 +1457,23 @@ async function initPhone(){
     });
 
     phoneUA.start();
-    return true;
+
+    // Wait for SIP registration (max 8 seconds)
+    return await new Promise(resolve => {
+      const t = setTimeout(() => resolve(false), 8000);
+      phoneUA.on('registered', () => {
+        clearTimeout(t);
+        phoneReady = true;
+        toast('Placetel bereit','📞');
+        resolve(true);
+      });
+      phoneUA.on('registrationFailed', (e) => {
+        clearTimeout(t);
+        toast('Placetel Login fehlgeschlagen: '+e.cause,'⚠️');
+        phoneReady = false;
+        resolve(false);
+      });
+    });
   }catch(e){ toast('Placetel SDK Fehler: '+e.message,'⚠️'); return false; }
 }
 
@@ -1452,7 +1499,6 @@ async function makeCall(phoneNumber, kundeId){
     toast('Verbinde mit Placetel...','📞');
     const ok = await initPhone();
     if(!ok) return;
-    await new Promise(res => setTimeout(res, 2500));
     if(!phoneReady){ toast('Placetel nicht bereit — bitte erneut versuchen','⚠️'); return; }
   }
   const k = kundeId ? D.kunden.find(x=>x.id===kundeId) : null;
@@ -1486,11 +1532,23 @@ function toggleMute(){
   if(btn){ btn.textContent = callMuted ? '🔇 Stumm' : '🎙 Ton'; btn.style.color = callMuted ? 'var(--red2)' : 'var(--t2)'; }
 }
 
+function toggleDtmf(){
+  const el=document.getElementById('dtmfWrap');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function sendDtmf(tone){
+  if(!phoneSession) return;
+  try{ phoneSession.sendDTMF(tone); }catch(e){}
+  toast('DTMF: '+tone,'🔢');
+}
+
 function onCallEnded(){
   clearInterval(callState.timerInterval);
   const duration = callState.startTime ? Math.floor((Date.now()-callState.startTime)/1000) : 0;
   callState.active = false;
   document.getElementById('callBar').classList.remove('on');
+  document.getElementById('dtmfWrap').style.display='none';
   callMuted = false;
   phoneSession = null;
   if(!D.calls) D.calls=[];
@@ -1550,10 +1608,8 @@ async function startCall(){
 }
 
 function stopCall(){
-  if(phoneSession){ try{ phoneSession.terminate(); }catch(e){} return; }
-  clearInterval(callState.timerInterval);
-  callState.active=false;
-  document.getElementById('callBar').classList.remove('on');
+  if(phoneSession){ try{ phoneSession.terminate(); }catch(e){ onCallEnded(); } return; }
+  onCallEnded();
 }
 
 function delCall(id){
